@@ -1,0 +1,22 @@
+{
+    "session_name": "aludel",
+    "start_directory": "./",
+    "windows": [
+        {
+            "window_name": "code",
+            "focus": true,
+            "layout": "even-horizontal",
+            "panes": ["nvim"]
+        },
+        {
+            "window_name": "term",
+            "layout": "even-horizontal",
+            "panes": ["clear", "clear"]
+        },
+        {
+            "window_name": "server",
+            "layout": "even-horizontal",
+            "panes": ["clear", "clear"]
+        }
+    ]
+}

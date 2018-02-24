@@ -1,0 +1,21 @@
+{
+    "name": "aludel",
+    "version": "0.0.1",
+    "main": "./dist/main.js",
+    "scripts": {
+        "build": "tsc",
+        "app": "parcel ./app"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "@types/mithril": "^1.1.12",
+        "@types/ramda": "^0.25.18",
+        "mithril": "^1.1.6",
+        "parcel-bundler": "^1.6.2",
+        "typescript": "^2.7.2"
+    },
+    "dependencies": {
+        "flyd": "^0.2.6",
+        "ramda": "^0.25.0"
+    }
+}
