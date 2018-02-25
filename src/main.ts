@@ -165,8 +165,6 @@ export const createApp = (initialModel: Model, renderer: RendererFn) => {
             console.log(model)
             renderer(rootElement, topComponent)
         })
-
-        window.n = router.navigate
     }
 
     return {

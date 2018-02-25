@@ -7,7 +7,7 @@ import {
 } from '../src/main'
 
 const renderer = (rootElement: HTMLElement, component: Component) => {
-    m.render(rootElement, component())
+    m.render(rootElement, (component() as any))
 }
 
 const app = createApp({
@@ -25,7 +25,7 @@ const app = createApp({
 const tasksTemplate: ComponentTemplate = {
     sockets: ['taskList', 'selectedTask'],
     actions: () => ({}),
-    view: ({}) => m('div', 'Tasks')
+    view: ({foci}) => m('div', `Tasks (selected ${foci.selectedTask()})`)
 }
 
 const subTemplate: ComponentTemplate = {
@@ -51,7 +51,7 @@ const homeTemplate: ComponentTemplate = {
 
 const homeComponent = app.createComponent(homeTemplate, {title: ['home']})
 
-const tasksComponent = app.createComponent(tasksTemplate, {taskList: ['tasks', 'list'], selectedTask: ['router', 'page', 'Tasks', 'Task', 'id']})
+const tasksComponent = app.createComponent(tasksTemplate, {taskList: ['tasks', 'list'], selectedTask: ['router', 'pages', 'Task', 'id']})
 
 const router = app.createRouter({
     '/': {name: 'Main', component: homeComponent},
