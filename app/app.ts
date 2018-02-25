@@ -22,6 +22,12 @@ const app = createApp({
     }
 }, renderer)
 
+const tasksTemplate: ComponentTemplate = {
+    sockets: ['taskList', 'selectedTask'],
+    actions: () => ({}),
+    view: ({}) => m('div', 'Tasks')
+}
+
 const subTemplate: ComponentTemplate = {
     sockets: ['counter', 'message'],
     actions: ({foci, lenses}) => ({
@@ -37,6 +43,7 @@ const homeTemplate: ComponentTemplate = {
     }),
     view: ({createComponent, foci, actions}) => m('div', {onclick: actions.change}, [
         foci.title(),
+        m('div', 'Both counters below are sub components that use the same component template, just different lenses'),
         createComponent(subTemplate, {counter: ['firstCounter', 'value'], message: ['firstCounter', 'message']})(),
         createComponent(subTemplate, {counter: ['secondCounter', 'value'], message: ['secondCounter', 'message']})(),
     ])
@@ -44,5 +51,17 @@ const homeTemplate: ComponentTemplate = {
 
 const homeComponent = app.createComponent(homeTemplate, {title: ['home']})
 
-app.start(document.body, homeComponent)
+const tasksComponent = app.createComponent(tasksTemplate, {taskList: ['tasks', 'list'], selectedTask: ['router', 'page', 'Tasks', 'Task', 'id']})
+
+const router = app.createRouter({
+    '/': {name: 'Main', component: homeComponent},
+    '/tasks': {name: 'Tasks', component: tasksComponent, subroutes: {
+        '/:id': {name: 'Task', actions: [(params) => R.set(R.lensPath(['tasks', 'selectedTask']), params.id)]}
+    }}
+})
+
+router.defaultRoute = 'Task'
+router.defaultRouteParams = {id: 3}
+
+app.start(document.body, router)
 
