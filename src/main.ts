@@ -1,44 +1,44 @@
 import flyd from 'flyd'
-import * as R from 'ramda'
+import Immutable from 'seamless-immutable'
 import Mapper from 'url-mapper'
 
-export type Model = {[key: string]: any}
+export type MutableModel = {[key: string]: any}
+export type Model = Immutable.ImmutableObject<{[key: string]: any}>
 export type UpdateFn = (model: Model) => Model
 export type RendererFn = (rootElement: HTMLElement, view: any) => any
 
 export type Component = () => (tools: ViewTools) => any
-export type SocketPaths = {[key: string]: string[]}
-export type ComponentLenses = {[key: string]: R.Lens}
-export type ComponentFoci = {[key: string]: any}
-export type ComponentActions = {[key: string]: (...args: any[]) => UpdateFn} 
+export type SocketMap = {[key: string]: string[]}
+export type ActionMap = Immutable.ImmutableObject<{[key: string]: () => UpdateFn}>
+export type NavigationMap = Immutable.ImmutableObject<{[key: string]: Function}>
 
 export interface ComponentTemplate {
     sockets: string[]
-    actions: (tools: ActionTools) => ComponentActions
+    actions: (tools: ActionTools) => {[key: string]: UpdateFn}
     view: (tools: ViewTools) => any
 }
 
 export interface ActionTools {
-    foci: ComponentFoci
-    lenses: ComponentLenses
+    paths: SocketMap
 }
 
 export interface ViewTools {
     createComponent: Function
-    foci: ComponentFoci
-    actions: ComponentActions
+    model: Model
+    actions: ActionMap
+    navigate: NavigationMap
 }
 
 export interface Route {
     name: string
     component: Component
-    subroutes?: SubRoutes
+    subroutes?: SubRouteMap
     actions?: ((...args: any[]) => UpdateFn)[]
 }
 
 export interface SubRoute {
     name: string
-    subroutes?: SubRoutes
+    subroutes?: SubRouteMap
     actions?: ((...args: any[]) => UpdateFn)[]
 }
 
@@ -48,97 +48,109 @@ export interface FlatRoute {
     actions?: ((...args: any[]) => UpdateFn)[]
 }
 
-export type Routes = {[key: string]: Route}
-export type SubRoutes = {[key: string]: SubRoute}
-export type FlatRoutes = {[key: string]: FlatRoute}
+export type RouteMap = {[key: string]: Route}
+export type SubRouteMap = {[key: string]: SubRoute}
+export type FlatRouteMap = Immutable.ImmutableObject<{[key: string]: FlatRoute}>
 export interface Router {
     defaultRoute: string
     defaultRouteParams: {[key: string]: any}
     navigate: {[key: string]: Function}
-    routes: FlatRoutes
+    routes: FlatRouteMap
 }
 
-
-export const createApp = (initialModel: Model, renderer: RendererFn) => {
+export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
     const urlMapper = Mapper()
 
     const updateStream = flyd.stream<UpdateFn>()
 
     const applyUpdate = (currentModel: Model, modelUpdate: UpdateFn) => modelUpdate(currentModel)
-    const modelStream = flyd.scan<Model, UpdateFn>(applyUpdate, initialModel, updateStream)
+    const modelStream = flyd.scan<Model, UpdateFn>(applyUpdate, Immutable(initialModel), updateStream)
 
     let topComponent = () => ({})
+    let navigate = Immutable({}) as NavigationMap
 
-    const createComponent = (template: ComponentTemplate, paths: SocketPaths): Component => {
+    const createComponent = (template: ComponentTemplate, socketMap: SocketMap): Component => {
 
-        const lenses = R.reduce<string, ComponentLenses>(
-            (acc, socket) => R.assoc(socket, R.lensPath(paths[socket]), acc),
-            {},
-            template.sockets
+        const sockets = Immutable(template.sockets)
+
+        const paths: SocketMap = sockets.reduce(
+            (acc, socket) => acc.set(socket, socketMap[socket]),
+            Immutable(({} as SocketMap))
         )
 
-        const foci   = R.reduce<string, ComponentFoci>(
-            (acc, socket) => R.assoc(socket, () => R.view(lenses[socket], modelStream()), acc),
-            {},
-            template.sockets
+        const getLocalModel: () => Model = () => sockets.reduce(
+            (acc, socket) => acc.set(socket, modelStream().getIn(paths[socket])),
+            Immutable({})
         )
 
-        const actionMap = template.actions({foci, lenses})
-        const actions = R.reduce<string, ComponentActions>(
-            (acc, action) => R.assoc(action, (...args: any[]) => updateStream(actionMap[action](...args)), acc),
-            {},
-            R.keys(actionMap)
-        )
+        const actionMap = template.actions({paths})
 
-        return () => template.view({createComponent, foci, actions})
+        const modelSync = (localModel: Model) => (globalModel: Model) =>
+            sockets.reduce(
+                (acc, socket) => {
+                    return acc.setIn(paths[socket], localModel[socket])
+                },
+                globalModel
+            )
+
+        const actions: ActionMap = Object
+            .keys(actionMap)
+            .reduce(
+                (acc, name) => acc.set(
+                    name,
+                    () => updateStream(modelSync(actionMap[name](getLocalModel())))
+                ),
+                (Immutable({}) as ActionMap)
+            )
+
+
+        const initAction = actions['@init']
+        if (typeof initAction === 'function') {
+            initAction()
+        }
+
+        return () => template.view({createComponent, model: getLocalModel(), navigate, actions})
     }
 
-    const createRouter = (routes: Routes): Router => {
-        const flattenSubroutes = (component: Component, parentPath: string, subroutes: SubRoutes): FlatRoutes => R.reduce(
-            (acc, path) => {
+    const createRouter = (routes: RouteMap): Router => {
+        const flattenSubroutes = (component: Component, parentPath: string, subroutes: SubRouteMap): FlatRouteMap => {
+            return Object.keys(subroutes).reduce((acc, path) => {
                 const fullPath = parentPath + path
                 const route = subroutes[path]
-                acc = R.assoc(fullPath, {
-                    name: route.name,
-                    component: component,
-                    actions: route.actions,
-                }, acc)
+                acc = acc.set(fullPath, {name: route.name, component: component, actions: route.actions})
 
                 if (route.subroutes) {
-                    return R.merge(acc, flattenSubroutes(component, fullPath, route.subroutes))
-                } 
+                    return acc.merge(flattenSubroutes(component, fullPath, route.subroutes))
+                }
 
                 return acc
-            }, {}, R.keys(subroutes))
+            }, Immutable({}) as FlatRouteMap)
+        }
 
-        const flatRoutes: FlatRoutes = R.reduce((acc, path) => {
+        const flatRoutes: FlatRouteMap = Object.keys(routes).reduce((acc, path) => {
             const route = routes[path]
-            acc = R.assoc(path, {
-                name: route.name,
-                component: route.component,
-                actions: route.actions,
-            }, acc)
+            acc = acc.set(path, {name: route.name, component: route.component, actions: route.actions})
 
             if (route.subroutes) {
-                return R.merge(acc, flattenSubroutes(route.component, path, route.subroutes))
+                return acc.merge(flattenSubroutes(route.component, path, route.subroutes))
             }
 
             return acc
-        }, {}, R.keys(routes))
+        }, Immutable({}) as FlatRouteMap)
 
-        const navigate = R.reduce((acc, path) => {
+        navigate = Object.keys(flatRoutes).reduce((acc, path) => {
             const route = flatRoutes[path]
-            return R.assoc(route.name, (params: {[key: string]: any}) => {
+            return acc.set(route.name, (params: {[key: string]: any}) => {
                 topComponent = route.component
                 window.history.pushState({}, '', '#' + urlMapper.stringify(path, params || {}))
                 updateStream(model => {
-                    model = R.set(R.lensPath(['router', 'current']), route.name, model)
-                    model = R.set(R.lensPath(['router', 'pages', route.name]), params || {}, model)
                     return model
+                        .setIn(['router', 'current'], route.name)
+                        .setIn(['router', 'pages', route.name], params || {})
                 })
                 route.actions && route.actions.forEach(action => updateStream(action(params || {})))
-            }, acc)
-        }, {}, R.keys(flatRoutes))
+            })
+        }, Immutable({}) as NavigationMap)
 
         return {
             defaultRoute: 'Main',
