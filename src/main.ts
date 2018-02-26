@@ -14,7 +14,7 @@ export type NavigationMap = Immutable.ImmutableObject<{[key: string]: Function}>
 
 export interface ComponentTemplate {
     sockets: string[]
-    actions: (tools: ActionTools) => {[key: string]: UpdateFn}
+    actions: (tools: ActionTools) => {[key: string]: (...args: any[]) => UpdateFn}
     view: (tools: ViewTools) => any
 }
 
@@ -161,19 +161,19 @@ export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
     }
 
     const start = (rootElement: HTMLElement, router: Router | Component) => {
-        const resolveRoute = () => {
-            const route = document.location.hash.substring(1)
-            const resolved = urlMapper.map(route, router.routes)
-            if (resolved) {
-                router.navigate[resolved.match.name](resolved.values)
-                return true
-            } else {
-                return false
-            }
-        }
         if (typeof router === 'function') {
             topComponent = router
         } else {
+            const resolveRoute = () => {
+                const route = document.location.hash.substring(1)
+                const resolved = urlMapper.map(route, router.routes)
+                if (resolved) {
+                    router.navigate[resolved.match.name](resolved.values)
+                    return true
+                } else {
+                    return false
+                }
+            }
             window.onpopstate = resolveRoute
             resolveRoute() || router.navigate[router.defaultRoute](router.defaultRouteParams)
         }

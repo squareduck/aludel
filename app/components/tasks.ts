@@ -3,6 +3,8 @@ import { ComponentTemplate, ViewTools, Model } from '../../src/main'
 import { app } from '../app'
 import { navigationCpt } from './navigation'
 
+// Task list
+
 const taskListTpl: ComponentTemplate = {
     sockets: ['taskList'],
     actions: () => ({
@@ -11,6 +13,7 @@ const taskListTpl: ComponentTemplate = {
         }
     }),
     view: ({model}) => {
+        console.log(model)
         return m('div', {class: 'task-list'}, model.taskList.asMutable().map((task: any) => m('div', {class: 'task-item'}, task.name)))
     }
 }
@@ -18,6 +21,8 @@ const taskListTpl: ComponentTemplate = {
 const taskListCpt = app.createComponent(taskListTpl, {
     taskList: ['tasks', 'list']
 })
+
+// Task input
 
 const taskInputTpl: ComponentTemplate = {
     sockets: ['taskInput', 'taskList'],
@@ -36,6 +41,7 @@ const taskInputTpl: ComponentTemplate = {
         return m('div', {class: 'task-input'}, [
             m('input', {
                 value: model.taskInput,
+                placeholder: 'Enter name for new task',
                 oninput: m.withAttr('value', actions.updateInput),
                 onkeyup: actions.keyUp
             })
@@ -48,10 +54,12 @@ const taskInputCpt = app.createComponent(taskInputTpl, {
     taskList: ['tasks', 'list']
 })
 
+// Tasks page
+
 export const tasksTpl: ComponentTemplate = {
     sockets: [],
-    actions: () => ({paths}) => ({
-        '@init': (model) => {
+    actions: () => ({
+        '@init': () => (model: Model) => {
             return model.setIn(['currentUser', 'name'], 'Duck')
         }
     }),

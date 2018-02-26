@@ -7,6 +7,30 @@ body {
     font-weight: 300;
 }
 
+input {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-weight: 300;
+    font-size: 16px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border:0px solid #BEBEBE;
+    outline: none;
+    border-radius: 2px;
+}
+
+textarea {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-weight: 300;
+    font-size: 16px;
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border:0px solid #BEBEBE;
+    outline: none;
+    border-radius: 2px;
+}
+
 a {
   outline: none;
   text-decoration: none;
@@ -31,33 +55,58 @@ a {
     padding-bottom: 12px;
     padding-right: 15px;
     padding-left: 15px;
-    margin-right: 10px;
 }
 
 .header a.active {
     color: #333;
+    background-color: #aaa;
     border-bottom-color: #333;
-    border-bottom-width: 5px;
+    border-bottom-width: 3px;
     border-bottom-style: inset;
-    margin-right: 10px;
 }
 
 .header a:hover {
     color: #fff;
 }
 
+.controls button {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-weight: 300;
+    font-size: 12px;
+    padding: 10px;
+    box-sizing: border-box;
+    border:0px solid #BEBEBE;
+    background-color: #bbb;
+    outline: none;
+    border-radius: 2px;
+}
+
+.controls button:hover {
+    background-color: #aaa;
+}
+
+.controls button:active {
+    background-color: #ccc;
+}
+
 .main {
-    padding: 15px;
-}
-
-.task-input input {
-    width: 100%;
-}
-
-.task-list {
-    margin-top: 15px;
+    padding: 10px;
 }
 
 .task-list .task-item {
-    padding: 5px;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #c7c7c7;
+    border-radius: 2px;
+}
+
+.note-list .note-item {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #c7c7c7;
+    border-radius: 2px;
+}
+
+.note-text {
+    margin-top: 10px;
 }

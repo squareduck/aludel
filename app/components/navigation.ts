@@ -11,7 +11,8 @@ export const navigationTpl: ComponentTemplate = {
         return [
             m('div', {class: 'header'}, [
                 link('#/', navigate.Home, 'Home', model.currentRoute === 'Home'),
-                link('#/tasks', navigate.Tasks, 'Tasks', model.currentRoute === 'Tasks')
+                link('#/tasks', navigate.Tasks, 'Tasks', model.currentRoute === 'Tasks' || model.currentRoute === 'Task')
+                link('#/notes', navigate.Notes, 'Notes', model.currentRoute === 'Notes' || model.currentRoute === 'Note')
             ]),
         ]
     }
