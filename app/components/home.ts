@@ -1,19 +1,26 @@
 import m from 'mithril'
-import { ComponentTemplate } from '../../src/main'
+import { ComponentTemplate, ViewTools } from '../../src/main'
+import { app } from '../app'
+import { navigationCpt } from './navigation'
 
 export const homeTpl: ComponentTemplate = {
     sockets: ['userList', 'currentUser'],
     actions: ({paths}) => ({
-        '@init': (model) => {
+        '@init': () => (model) => {
             return model.setIn(['currentUser', 'name'], 'Duck')
         }
     }),
-    view: ({createComponent, model, navigate}) => {
-        return [
-            m('div', {class: 'header'}, 'Home'),
+    view: ({model, navigate}) =>
+        m('div', {class: 'home'}, [
+            navigationCpt(),
             m('div', {class: 'main'}, [
                 m('div', `Hello, ${model.currentUser.name}`)
             ])
-        ]
-    }
+        ])
+
 }
+
+export const homeCpt = app.createComponent(homeTpl, {
+    userList: ['users', 'list'],
+    currentUser: ['users', 'currentUser']
+})

@@ -9,7 +9,7 @@ export type RendererFn = (rootElement: HTMLElement, view: any) => any
 
 export type Component = () => (tools: ViewTools) => any
 export type SocketMap = {[key: string]: string[]}
-export type ActionMap = Immutable.ImmutableObject<{[key: string]: () => UpdateFn}>
+export type ActionMap = Immutable.ImmutableObject<{[key: string]: (...args: any[]) => UpdateFn}>
 export type NavigationMap = Immutable.ImmutableObject<{[key: string]: Function}>
 
 export interface ComponentTemplate {
@@ -23,7 +23,6 @@ export interface ActionTools {
 }
 
 export interface ViewTools {
-    createComponent: Function
     model: Model
     actions: ActionMap
     navigate: NavigationMap
@@ -88,7 +87,8 @@ export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
         const modelSync = (localModel: Model) => (globalModel: Model) =>
             sockets.reduce(
                 (acc, socket) => {
-                    return acc.setIn(paths[socket], localModel[socket])
+                    if (paths[socket]) return acc.setIn(paths[socket], localModel[socket])
+                    return acc
                 },
                 globalModel
             )
@@ -98,7 +98,7 @@ export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
             .reduce(
                 (acc, name) => acc.set(
                     name,
-                    () => updateStream(modelSync(actionMap[name](getLocalModel())))
+                    (...args: any[]) => updateStream(modelSync(actionMap[name](...args)(getLocalModel())))
                 ),
                 (Immutable({}) as ActionMap)
             )
@@ -109,7 +109,7 @@ export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
             initAction()
         }
 
-        return () => template.view({createComponent, model: getLocalModel(), navigate, actions})
+        return () => template.view({model: getLocalModel(), navigate, actions})
     }
 
     const createRouter = (routes: RouteMap): Router => {
@@ -161,16 +161,21 @@ export const createApp = (initialModel: MutableModel, renderer: RendererFn) => {
     }
 
     const start = (rootElement: HTMLElement, router: Router | Component) => {
+        const resolveRoute = () => {
+            const route = document.location.hash.substring(1)
+            const resolved = urlMapper.map(route, router.routes)
+            if (resolved) {
+                router.navigate[resolved.match.name](resolved.values)
+                return true
+            } else {
+                return false
+            }
+        }
         if (typeof router === 'function') {
             topComponent = router
         } else {
-            window.onpopstate = () => {
-                const route = document.location.hash.substring(1)
-                const resolved = urlMapper.map(route, router.routes)
-                if (resolved) router.navigate[resolved.match.name](resolved.values)
-            }
-
-            router.navigate[router.defaultRoute](router.defaultRouteParams)
+            window.onpopstate = resolveRoute
+            resolveRoute() || router.navigate[router.defaultRoute](router.defaultRouteParams)
         }
 
         modelStream.map(model => {
