@@ -3,7 +3,7 @@ import { ComponentTemplate, ViewTools } from '../../src/main'
 import { app } from '../app'
 import { navigationCpt } from './navigation'
 
-export const homeTpl: ComponentTemplate = {
+export const homeComponent: ComponentTemplate = {
     sockets: ['userList', 'currentUser'],
     actions: ({paths}) => ({
         '@init': () => (model) => {
@@ -19,8 +19,3 @@ export const homeTpl: ComponentTemplate = {
         ])
 
 }
-
-export const homeCpt = app.createComponent(homeTpl, {
-    userList: ['users', 'list'],
-    currentUser: ['users', 'currentUser']
-})

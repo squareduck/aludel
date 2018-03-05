@@ -1,15 +1,14 @@
 import { app } from './app'
 import { homeCpt } from './components/home'
 import { tasksCpt } from './components/tasks'
-import { notesCpt } from './components/notes'
+import { notesCpt, noteCpt } from './components/notes'
 
 
 const router = app.createRouter({
     '/': {name: 'Home', component: homeCpt},
     '/tasks': {name: 'Tasks', component: tasksCpt},
-    '/notes': {name: 'Notes', component: notesCpt, subroutes: {
-        '/:id': {name: 'Note', actions: }
-    }},
+    '/notes': {name: 'Notes', component: notesCpt},
+    '/note/:id': {name: 'Note', component: noteCpt},
 })
 
 router.defaultRoute = 'Home'

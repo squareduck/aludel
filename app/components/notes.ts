@@ -57,11 +57,13 @@ const noteListCpt = app.createComponent(noteListTpl, {
     lastId: ['notes', 'lastId']
 })
 
-// Note edit
+// Note page
 
-const noteEditTpl: ComponentTemplate = {
+const noteTpl: ComponentTemplate = {
     sockets: ['noteId', 'list', 'text'],
     actions: () => ({
+        '@navigate': (params) => (model: Model) => {
+        },
         editNote: (note) => (model: Model) => {
             return model
         },
@@ -84,7 +86,7 @@ const noteEditTpl: ComponentTemplate = {
     }
 }
 
-const noteEditCpt = app.createComponent(noteEditTpl, {
+export const noteCpt = app.createComponent(noteTpl, {
     noteId: ['router', 'pages', 'Note', 'id'],
     list: ['notes', 'list'],
     text: ['notes', 'editor', 'text']
@@ -98,13 +100,9 @@ export const notesTpl: ComponentTemplate = {
     actions: () => ({}),
 
     view: ({model, actions, navigate}) => {
-        const noteComponent = () => {
-            return model.currentPage === 'Notes'? noteListCpt() : noteEditCpt()
-        }
-
         return m('div', {class: 'notes'}, [
             navigationCpt(),
-            noteComponent()
+            noteListCpt()
         ])
 
     }

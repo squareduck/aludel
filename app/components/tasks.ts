@@ -41,7 +41,7 @@ const taskInputTpl: ComponentTemplate = {
         return m('div', {class: 'task-input'}, [
             m('input', {
                 value: model.taskInput,
-                placeholder: 'Enter name for new task',
+                placeholder: 'Enter name for new note',
                 oninput: m.withAttr('value', actions.updateInput),
                 onkeyup: actions.keyUp
             })
