@@ -62,7 +62,7 @@ const routes = {
             '/:id': {
                 name: 'Task',
                 component: taskConfig,
-                action: (params) => (model: Model) => {
+                action: (params: any) => (model: Model) => {
                     console.log(params)
                     console.log(model)
                     return model.set('taskId', params.id)

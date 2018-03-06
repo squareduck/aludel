@@ -42,8 +42,8 @@ import createHistory from 'history/createBrowserHistory'
 
 export type Model = Immutable.ImmutableObject<{[key: string]: any}>
 export type UpdateFn = (model: Model) => Model
-export type RendererFn = (rootElement: HTMLElement, component: Component) => any
-export type RouteRendererFn = (component: Component) => any
+export type RendererFn = (rootElement: HTMLElement, instance: ComponentInstance) => any
+export type RouteRendererFn = (instance: ComponentInstance) => any
 
 export interface ComponentTemplate {
     sockets: string[]
@@ -51,18 +51,18 @@ export interface ComponentTemplate {
     render: RenderFn
 }
 
-export interface ComponentConfig {
+export interface Component {
     template: ComponentTemplate
     paths: SocketMap
 }
 
 export interface RenderTools {
     actions: ActionMap
-    outlet: Component
+    outlet: ComponentInstance
     model: Model
 }
 
-export type Component = () => any
+export type ComponentInstance = () => any
 export type RenderFn = (tools: RenderTools) => any
 export type Action = (...args: any[]) => (model: Model) => Model
 export type RouteAction = (params: {[key: string]: any}) => (model: Model) => Model
@@ -72,19 +72,19 @@ export type SocketMap = {[key: string]: string[]}
 export type RouteMap = {[key: string]: Route | string}
 export interface Route {
     name: string
-    component: ComponentConfig
+    component: Component
     action?: RouteAction
     subroutes?: RouteMap
 }
 
 export type FlatRouteMap = {[key: string]: FlatRoute}
 export interface FlatRouteCache {
-    component: Component
+    instance: ComponentInstance
 }
 export interface FlatRoute {
     name: string
-    cache?: Component
-    components: ComponentConfig[]
+    cache?: ComponentInstance
+    components: Component[]
     actions: RouteAction[]
 }
 
@@ -120,7 +120,7 @@ export const createApp = (
         )
 
     const createComponent = 
-        (template: ComponentTemplate, paths: SocketMap, outlet: Component): Component => {
+        (template: ComponentTemplate, paths: SocketMap, outlet: ComponentInstance): ComponentInstance => {
         const model = () => localModel(template.sockets, paths)
 
         // TODO: Make sure all sockets have defined paths
@@ -151,16 +151,16 @@ export const createApp = (
         initialRoutes: FlatRouteMap,
         root: string,
         actions: RouteAction[], 
-        components: ComponentConfig[], 
+        components: Component[], 
         routes: RouteMap
     ): FlatRouteMap => 
     {
-        const prepareAction = (action: RouteAction, config: ComponentConfig): RouteAction =>
+        const prepareAction = (action: RouteAction, component: Component): RouteAction =>
             (params: any) =>
                 syncModel(
-                    action(params)(localModel(config.template.sockets, config.paths)),
-                    config.template.sockets,
-                    config.paths
+                    action(params)(localModel(component.template.sockets, component.paths)),
+                    component.template.sockets,
+                    component.paths
                 )
 
         return Object.keys(routes).reduce((acc, path) => {
@@ -186,7 +186,7 @@ export const createApp = (
     }
 
     const createRouting =
-        (routes: RouteMap, topConfig: ComponentConfig, render: RouteRendererFn) => {
+        (routes: RouteMap, topComponent: Component, render: RouteRendererFn) => {
         const history = createHistory()
 
         const flatRoutes = flattenRoutes({}, '', [], [], routes)
@@ -197,7 +197,7 @@ export const createApp = (
         console.log(flatRoutes)
 
         const chainComponents =
-            (currentConfig: ComponentConfig, restConfigs: ComponentConfig[]): Component => {
+            (currentConfig: Component, restConfigs: Component[]): ComponentInstance => {
             const nextComponent = restConfigs.shift()
             if (nextComponent) {
                 return createComponent(
@@ -218,10 +218,12 @@ export const createApp = (
             if (resolved) {
                 const route = resolved.match
                 if (!route.cache) {
-                    route.cache = chainComponents(topConfig, route.components.slice(0))
+                    route.cache = chainComponents(topComponent, route.components.slice(0))
                 }
                 if (route !== lastRoute || lastValues !== JSON.stringify(resolved.values)) {
-                    route.actions.forEach(action => updateStream(action(resolved.values)))
+                    route.actions.forEach(
+                        (action: RouteAction) => updateStream(action(resolved.values))
+                    )
                 }
                 lastRoute = route
                 lastValues = JSON.stringify(resolved.values)
@@ -237,18 +239,18 @@ export const createApp = (
         return () => navigateByPath(history.location.hash.substring(1))
     }
 
-    const start = (rootElement: HTMLElement, topConfig: ComponentConfig, routes?: RouteMap) => {
+    const start = (rootElement: HTMLElement, topComponent: Component, routes?: RouteMap) => {
         if (routes) {
             const wrappedRenderer = createRouting(
                 routes,
-                topConfig,
-                (component: Component) => renderer(rootElement, component)
+                topComponent,
+                (instance: ComponentInstance) => renderer(rootElement, instance)
             )
             modelStream.map(model => wrappedRenderer())
         } else {
-            const topComponent =
-                createComponent(topConfig.template, topConfig.paths, () => undefined)
-            modelStream.map(model => renderer(rootElement, topComponent))
+            const topInstance =
+                createComponent(topComponent.template, topComponent.paths, () => undefined)
+            modelStream.map(model => renderer(rootElement, topInstance))
         }
 
     }
