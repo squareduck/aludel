@@ -169,19 +169,20 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         return Object.keys(routes).reduce((acc, path) => {
             const route = routes[path]
+            const localComponents = components.slice(0)
             if (typeof route !== 'string') {
                 route.action && actions.push(prepareAction(route.action, route.component))
-                components.push(route.component)
+                localComponents.push(route.component)
                 acc[root + path] = {
                     name: route.name,
-                    components: components,
+                    components: localComponents,
                     actions: actions
                 }
                 if (route.subroutes) flattenRoutes(
                     acc,
                     root + path,
                     actions.slice(0),
-                    components.slice(0),
+                    localComponents,
                     route.subroutes
                 )
             } else {
@@ -199,6 +200,8 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
         const history = createHistory()
 
         const flatRoutes = flattenRoutes({}, '', [], [], routes)
+
+        window.Aludel.routes = flatRoutes
 
         const navigate = Object.keys(flatRoutes).reduce((acc: Navigation, path) => {
             const route = flatRoutes[path]
