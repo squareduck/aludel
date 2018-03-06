@@ -31,7 +31,7 @@ const tasksTemplate: ComponentTemplate = {
     render: ({model, outlet}) => m('div', [model.info , outlet(), 'List end'])
 }
 
-const tasksConfig = {
+const tasksComponent = {
     template: tasksTemplate,
     paths: {
         'list': ['tasks', 'list'],
@@ -50,7 +50,7 @@ const taskTemplate: ComponentTemplate = {
     ])
 }
 
-const taskConfig = {
+const taskComponent = {
     template: taskTemplate,
     paths: {
         'list': ['tasks', 'list'],
@@ -59,17 +59,16 @@ const taskConfig = {
 }
 
 const routes = {
+    '*': '/tasks/404',
     '/': '/tasks',
     '/tasks': {
         name: 'Tasks', 
-        component: tasksConfig, 
+        component: tasksComponent, 
         subroutes: {
             '/:id': {
                 name: 'Task',
-                component: taskConfig,
+                component: taskComponent,
                 action: (params: any) => (model: Model) => {
-                    console.log(params)
-                    console.log(model)
                     return model.set('taskId', params.id)
                 }
             }

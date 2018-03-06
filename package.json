@@ -2,13 +2,13 @@
     "author": "Daniil Velichko <danvelduck@gmail.com>",
     "name": "aludel",
     "description": "Web app framework with global store and tightly scoped components",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "homepage": "https://github.com/squareduck/aludel",
-    "main": "./dist/main",
-    "typings": "./dist/main",
+    "main": "./dist/aludel",
+    "typings": "./dist/aludel",
     "scripts": {
         "build": "npm run clean & tsc -p .",
-        "app": "parcel ./app",
+        "app": "parcel ./demo",
         "clean": "rm -rf ./dist"
     },
     "license": "MIT",
@@ -27,7 +27,7 @@
         "url-mapper": "^2.0.0"
     },
     "files": [
-        "./dist/src/main.js",
-        "./dist/src/main.d.ts"
+        "./dist/src/aludel.js",
+        "./dist/src/aludel.d.ts"
     ]
 }

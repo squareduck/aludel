@@ -80,7 +80,7 @@ export interface Route {
 
 export type Navigation = {[key: string]: Function}
 
-export type FlatRouteMap = {[key: string]: FlatRoute}
+export type FlatRouteMap = {[key: string]: FlatRoute | string}
 export interface FlatRouteCache {
     instance: ComponentInstance
 }
@@ -92,6 +92,8 @@ export interface FlatRoute {
 }
 
 export const createApp = (renderer: RendererFn, initialModel: {[key: string]: any}) => {
+    window.Aludel = {}
+
     const urlMapper = Mapper()
 
     const updateStream = flyd.stream<UpdateFn>()
@@ -182,6 +184,8 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                     components.slice(0),
                     route.subroutes
                 )
+            } else {
+                acc[root + path] = (route as string)
             }
             return acc
         }, initialRoutes)
@@ -198,17 +202,16 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         const navigate = Object.keys(flatRoutes).reduce((acc: Navigation, path) => {
             const route = flatRoutes[path]
-            acc[route.name] =
-                (params:any) => () => history.push('#' + urlMapper.stringify(path, params || {}), {})
+            if (typeof route !== 'string') {
+                acc[route.name] =
+                    (params:any) =>
+                        () => history.push('#' + urlMapper.stringify(path, params || {}), {})
+            }
             return acc
         }, {})
 
-        console.log(navigate)
-
         let lastRoute: Route
         let lastValues: string
-
-        console.log(flatRoutes)
 
         const chainComponents =
             (currentConfig: Component, restConfigs: Component[]): ComponentInstance => {
@@ -229,22 +232,42 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             )
         }
 
+        const updateRouterModel = (route: FlatRoute, params: any) => {
+            updateStream((model) =>
+                model.setIn(['$router', 'currentRoute'], {
+                    name: route.name,
+                    params: params,
+                })
+            )
+        }
+
         const navigateByPath = (path: string) => {
             const resolved = urlMapper.map(path, flatRoutes)
             if (resolved) {
                 const route = resolved.match
-                if (!route.cache) {
-                    route.cache = chainComponents(topComponent, route.components.slice(0))
+                if (typeof route === 'string') {
+                    history.push('#' + route, {})
+                } else {
+                    if (!route.cache) {
+                        route.cache = chainComponents(topComponent, route.components.slice(0))
+                    }
+                    if (
+                        (lastRoute && route.name !== lastRoute.name) 
+                        || lastValues !== JSON.stringify(resolved.values)
+                    ) {
+                        lastRoute = route
+                        lastValues = JSON.stringify(resolved.values)
+                        updateRouterModel(route, resolved.values)
+                        route.actions.forEach(
+                            (action: RouteAction) => updateStream(action(resolved.values))
+                        )
+                        console.log('Rendering route', path)
+                        render(route.cache)
+                    }
+
                 }
-                if (route !== lastRoute || lastValues !== JSON.stringify(resolved.values)) {
-                    route.actions.forEach(
-                        (action: RouteAction) => updateStream(action(resolved.values))
-                    )
-                }
-                lastRoute = route
-                lastValues = JSON.stringify(resolved.values)
-                console.log(route)
-                render(route.cache)
+            } else {
+                history.push('#' + flatRoutes['*'], {})
             }
         }
 
@@ -252,6 +275,8 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             const path = location.hash.substring(1)
             navigateByPath(path)
         })
+
+        history.push('/#/', {})
 
         return () => navigateByPath(history.location.hash.substring(1))
     }
@@ -263,7 +288,10 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                 topComponent,
                 (instance: ComponentInstance) => renderer(rootElement, instance)
             )
-            modelStream.map(model => wrappedRenderer())
+            modelStream.map(model => {
+                window.Aludel.model = model
+                wrappedRenderer()
+            })
         } else {
             const topInstance =
                 createComponent(topComponent.template, topComponent.paths, () => undefined)
