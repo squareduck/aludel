@@ -60,6 +60,7 @@ export interface RenderTools {
     actions: ActionMap
     outlet: ComponentInstance
     model: Model
+    navigate?: Navigation
 }
 
 export type ComponentInstance = () => any
@@ -77,6 +78,8 @@ export interface Route {
     subroutes?: RouteMap
 }
 
+export type Navigation = {[key: string]: Function}
+
 export type FlatRouteMap = {[key: string]: FlatRoute}
 export interface FlatRouteCache {
     instance: ComponentInstance
@@ -88,12 +91,7 @@ export interface FlatRoute {
     actions: RouteAction[]
 }
 
-export const createApp = (
-    renderer: RendererFn,
-    initialModel: {[key: string]: any},
-) => {
-    // Step over whole routes tree and create components injected with outlet functions that depend on relevant route changes
-    //
+export const createApp = (renderer: RendererFn, initialModel: {[key: string]: any}) => {
     const urlMapper = Mapper()
 
     const updateStream = flyd.stream<UpdateFn>()
@@ -119,8 +117,12 @@ export const createApp = (
             global
         )
 
-    const createComponent = 
-        (template: ComponentTemplate, paths: SocketMap, outlet: ComponentInstance): ComponentInstance => {
+    const createComponent = (
+        template: ComponentTemplate,
+        paths: SocketMap,
+        outlet: ComponentInstance,
+        navigate?: Navigation,
+    ): ComponentInstance => {
         const model = () => localModel(template.sockets, paths)
 
         // TODO: Make sure all sockets have defined paths
@@ -144,7 +146,7 @@ export const createApp = (
 
         if (actions['@init']) actions['@init']()
 
-        return () => template.render({model: model(), actions, outlet: outlet})
+        return () => template.render({model: model(), actions, outlet: outlet, navigate})
     }
 
     const flattenRoutes = (
@@ -185,11 +187,23 @@ export const createApp = (
         }, initialRoutes)
     }
 
-    const createRouting =
-        (routes: RouteMap, topComponent: Component, render: RouteRendererFn) => {
+    const createRouting = (
+        routes: RouteMap,
+        topComponent: Component,
+        render: RouteRendererFn) =>
+    {
         const history = createHistory()
 
         const flatRoutes = flattenRoutes({}, '', [], [], routes)
+
+        const navigate = Object.keys(flatRoutes).reduce((acc: Navigation, path) => {
+            const route = flatRoutes[path]
+            acc[route.name] =
+                (params:any) => () => history.push('#' + urlMapper.stringify(path, params || {}), {})
+            return acc
+        }, {})
+
+        console.log(navigate)
 
         let lastRoute: Route
         let lastValues: string
@@ -203,13 +217,15 @@ export const createApp = (
                 return createComponent(
                     currentConfig.template,
                     currentConfig.paths,
-                    chainComponents(nextComponent, restConfigs)
+                    chainComponents(nextComponent, restConfigs),
+                    navigate
                 )
             }
             return createComponent(
                 currentConfig.template,
                 currentConfig.paths,
-                () => undefined
+                () => undefined,
+                navigate
             )
         }
 
@@ -227,6 +243,7 @@ export const createApp = (
                 }
                 lastRoute = route
                 lastValues = JSON.stringify(resolved.values)
+                console.log(route)
                 render(route.cache)
             }
         }

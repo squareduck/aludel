@@ -1,4 +1,4 @@
-import {createApp, Model, ComponentTemplate, ComponentConfig} from '../src/aludel'
+import {createApp, Model, ComponentTemplate, Component} from '../src/aludel'
 import m from 'mithril'
 
 const {createComponent, start} = createApp(
@@ -16,7 +16,7 @@ const outerTemplate: ComponentTemplate = {
         m('div', {onclick: actions.add}, [model.text, outlet()]),
 }
 
-const outerConfig: ComponentConfig = {
+const outerComponent: Component = {
     template: outerTemplate,
     paths: {
         'text': ['message']
@@ -42,7 +42,12 @@ const tasksConfig = {
 const taskTemplate: ComponentTemplate = {
     sockets: ['list', 'taskId'],
     actions: {},
-    render: ({model, outlet}) => m('div', ['Task start', model.taskId, 'Task end'])
+    render: ({model, outlet, navigate}) => m('div', [
+        'Task start',
+        model.taskId,
+        m('button', {onclick: navigate.Tasks()}, 'Go to Tasks'),
+        'Task end',
+    ])
 }
 
 const taskConfig = {
@@ -73,4 +78,4 @@ const routes = {
     }
 }
 
-start(document.body, outerConfig, routes)
+start(document.body, outerComponent, routes)
