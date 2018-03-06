@@ -13,7 +13,7 @@ const outerTemplate: ComponentTemplate = {
         add: () => (model) => model.set('text', model.text + '!')
     },
     render: ({model, actions, outlet}) =>
-        m('div', {onclick: actions.add}, [model.text, outlet()]),
+        m('div', {onclick: actions.add}, [model.text, outlet()])
 }
 
 const outerComponent: Component = {
@@ -73,8 +73,7 @@ const routes = {
                 }
             }
         }
-
     }
 }
 
-start(document.body, outerComponent, routes)
+start(document.querySelector('.app') || document.body, outerComponent, routes)

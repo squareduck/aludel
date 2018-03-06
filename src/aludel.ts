@@ -241,7 +241,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             )
         }
 
-        const navigateByPath = (path: string) => {
+        const navigateByPath = (path: string, force?: boolean) => {
             const resolved = urlMapper.map(path, flatRoutes)
             if (resolved) {
                 const route = resolved.match
@@ -263,8 +263,9 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                         )
                         console.log('Rendering route', path)
                         render(route.cache)
+                    } else if (force) {
+                        render(route.cache)
                     }
-
                 }
             } else {
                 history.push('#' + flatRoutes['*'], {})
@@ -278,7 +279,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         history.push('/#/', {})
 
-        return () => navigateByPath(history.location.hash.substring(1))
+        return (force: boolean) => navigateByPath(history.location.hash.substring(1), force)
     }
 
     const start = (rootElement: HTMLElement, topComponent: Component, routes?: RouteMap) => {
@@ -290,7 +291,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             )
             modelStream.map(model => {
                 window.Aludel.model = model
-                wrappedRenderer()
+                wrappedRenderer(true)
             })
         } else {
             const topInstance =
