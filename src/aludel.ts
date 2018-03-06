@@ -94,7 +94,7 @@ export interface FlatRoute {
 export const createApp = (renderer: RendererFn, initialModel: {[key: string]: any}) => {
     window.Aludel = {}
 
-    const urlMapper = Mapper()
+    const urlMapper = Mapper({query: true})
 
     const updateStream = flyd.stream<UpdateFn>()
 
