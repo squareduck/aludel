@@ -1,40 +1,3 @@
-//
-// # Notes
-//
-// Route can create actions with the same local model as its component
-//
-//
-// const tasksTemplate = {
-//     sockets: ['views'],
-//     actions: () => ({
-//         '@init': () => (model) => {
-//             if (!model.views) {
-//                 return model.set('views', {1: {name: 'All', rule: 'all'}})
-//             }
-//             return model
-//         }
-//     }),
-//     render: ({outlet}) => m('div', outlet())
-
-// const tasksComponent = {
-//     template: tasksTemplate,
-//     sockets: {
-//         'views': ['tasks', 'views']
-//     }
-// }
-//
-//
-// const router = {
-//     '/': '/tasks',
-//     '/tasks': {name: 'Tasks', component: tasksComponent, subroutes: {
-//         '/views/:id': {name: 'TaskView', component: taskView, subroutes: {
-//             '/task/:id': {name: 'TaskInfo', component: taskInfo}
-//         }}
-//     }}
-// }
-
-// createApp(layoutComponent, router)
-//
 import flyd from 'flyd'
 import Immutable from 'seamless-immutable'
 import Mapper from 'url-mapper'
@@ -91,10 +54,10 @@ export interface FlatRoute {
     actions: RouteAction[]
 }
 
+const urlMapper = Mapper({query: true})
+
 export const createApp = (renderer: RendererFn, initialModel: {[key: string]: any}) => {
     window.Aludel = {}
-
-    const urlMapper = Mapper({query: true})
 
     const updateStream = flyd.stream<UpdateFn>()
 
@@ -213,6 +176,8 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             return acc
         }, {})
 
+        window.Aludel.navigate = navigate
+
         let lastRoute: Route
         let lastValues: string
 
@@ -251,15 +216,16 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                 if (typeof route === 'string') {
                     history.push('#' + route, {})
                 } else {
+                    const valuesString = JSON.stringify(resolved.values)
                     if (!route.cache) {
                         route.cache = chainComponents(topComponent, route.components.slice(0))
                     }
                     if (
                         (lastRoute && route.name !== lastRoute.name) 
-                        || lastValues !== JSON.stringify(resolved.values)
+                        || lastValues !== valuesString
                     ) {
                         lastRoute = route
-                        lastValues = JSON.stringify(resolved.values)
+                        lastValues = valuesString
                         updateRouterModel(route, resolved.values)
                         route.actions.forEach(
                             (action: RouteAction) => updateStream(action(resolved.values))
@@ -299,7 +265,10 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
         } else {
             const topInstance =
                 createComponent(topComponent.template, topComponent.paths, () => undefined)
-            modelStream.map(model => renderer(rootElement, topInstance))
+            modelStream.map(model => {
+                window.Aludel.model = model
+                renderer(rootElement, topInstance)
+            })
         }
 
     }
