@@ -1,6 +1,6 @@
-import flyd from 'flyd'
-import Immutable from 'seamless-immutable'
-import Mapper from 'url-mapper'
+import * as flyd from 'flyd'
+import * as Immutable from 'seamless-immutable'
+import * as Mapper from 'url-mapper'
 import createHistory from 'history/createBrowserHistory'
 
 export type Model = Immutable.ImmutableObject<{[key: string]: any}>

@@ -1,5 +1,5 @@
-import {createApp, Model, ComponentTemplate, Component} from '../src/aludel'
-import m from 'mithril'
+import {createApp, Model, ComponentTemplate, Component} from '../src/index'
+import * as m from 'mithril'
 
 const {createComponent, start} = createApp(
     (rootElement: HTMLElement, component: any) => m.render(rootElement, component()),
