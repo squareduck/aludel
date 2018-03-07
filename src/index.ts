@@ -129,9 +129,9 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             )
 
         if (actions['@init']) actions['@init']()
+        const componentCache: {[key: string]: ComponentInstance} = {}
 
         return () => {
-            const componentCache: {[key: string]: ComponentInstance} = {}
             const create = (component: Component) => {
                 if (!componentCache[component.signature])
                     componentCache[component.signature] = instantiateComponent(

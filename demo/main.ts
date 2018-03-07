@@ -45,8 +45,6 @@ const homeTemplate: ComponentTemplate = {
 }
 
 const homeComponent = createComponent(homeTemplate, {
-    template: homeTemplate,
-    paths: {}
 })
 
 const taskViewsTemplate: ComponentTemplate = {
