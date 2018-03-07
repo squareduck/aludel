@@ -23,6 +23,7 @@ export interface RenderTools {
     actions: ActionMap
     outlet: ComponentInstance
     model: Model
+    create: (component: Component) => ComponentInstance
     navigate?: Navigation
 }
 
@@ -111,7 +112,9 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         if (actions['@init']) actions['@init']()
 
-        return () => template.render({model: model(), actions, outlet: outlet, navigate})
+        const create = (component: Component) => createComponent(component.template, component.paths, () => undefined, navigate)
+
+        return () => template.render({model: model(), actions, outlet: outlet, navigate, create})
     }
 
     const flattenRoutes = (
