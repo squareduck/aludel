@@ -1,7 +1,7 @@
-import {createApp, Model, ComponentTemplate, Component} from '../src/index'
+import {createApp, createComponent, Model, ComponentTemplate, Component} from '../src/index'
 import * as m from 'mithril'
 
-const {createComponent, start} = createApp(
+const app = createApp(
     (rootElement: HTMLElement, component: any) => m.render(rootElement, component()),
     {
         tasks: {
@@ -29,12 +29,9 @@ const layoutTemplate: ComponentTemplate = {
     }
 }
 
-const layoutComponent: Component = {
-    template: layoutTemplate,
-    paths: {
-        currentView: ['tasks', 'currentView']
-    }
-}
+const layoutComponent = createComponent(layoutTemplate, {
+    currentView: ['tasks', 'currentView']
+})
 
 const homeTemplate: ComponentTemplate = {
     sockets: [],
@@ -47,10 +44,10 @@ const homeTemplate: ComponentTemplate = {
     ])
 }
 
-const homeComponent: Component = {
+const homeComponent = createComponent(homeTemplate, {
     template: homeTemplate,
     paths: {}
-}
+})
 
 const taskViewsTemplate: ComponentTemplate = {
     sockets: ['views', 'currentView'],
@@ -72,13 +69,10 @@ const taskViewsTemplate: ComponentTemplate = {
     ])
 }
 
-const taskViewsComponent = {
-    template: taskViewsTemplate,
-    paths: {
-        'views': ['tasks', 'views'],
-        'currentView': ['tasks', 'currentView']
-    }
-}
+const taskViewsComponent = createComponent(taskViewsTemplate, {
+    'views': ['tasks', 'views'],
+    'currentView': ['tasks', 'currentView']
+})
 
 const taskListTemplate: ComponentTemplate = {
     sockets: ['list', 'views', 'currentView', 'input', 'lastId'],
@@ -118,16 +112,13 @@ const taskListTemplate: ComponentTemplate = {
     }
 }
 
-const taskListComponent = {
-    template: taskListTemplate,
-    paths: {
-        input: ['tasks', 'input'],
-        lastId: ['tasks', 'lastId'],
-        list: ['tasks', 'list'],
-        views: ['tasks', 'views'],
-        currentView: ['tasks', 'currentView']
-    }
-}
+const taskListComponent = createComponent(taskListTemplate, {
+    input: ['tasks', 'input'],
+    lastId: ['tasks', 'lastId'],
+    list: ['tasks', 'list'],
+    views: ['tasks', 'views'],
+    currentView: ['tasks', 'currentView']
+})
 
 const taskTemplate: ComponentTemplate = {
     sockets: ['list', 'taskId'],
@@ -140,13 +131,10 @@ const taskTemplate: ComponentTemplate = {
     ])
 }
 
-const taskComponent = {
-    template: taskTemplate,
-    paths: {
+const taskComponent = createComponent(taskTemplate, {
         'list': ['tasks', 'list'],
         'taskId': ['tasks', 'selectedId']
-    }
-}
+})
 
 const routes = {
     '*': '/tasks/All',
@@ -169,4 +157,4 @@ const routes = {
     }
 }
 
-start(document.querySelector('.app') || document.body, layoutComponent, routes)
+app.start(document.querySelector('.app') || document.body, layoutComponent, routes)

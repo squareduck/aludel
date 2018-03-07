@@ -1,6 +1,7 @@
 import * as flyd from 'flyd'
 import * as Immutable from 'seamless-immutable'
 import * as Mapper from 'url-mapper'
+import * as hash from 'object-hash'
 import createHistory from 'history/createBrowserHistory'
 
 export type Model = Immutable.ImmutableObject<{[key: string]: any}>
@@ -15,6 +16,7 @@ export interface ComponentTemplate {
 }
 
 export interface Component {
+    signature: string
     template: ComponentTemplate
     paths: SocketMap
 }
@@ -62,6 +64,14 @@ export interface FlatRoute {
 
 const urlMapper = Mapper({query: true})
 
+export const createComponent = (template: ComponentTemplate, paths: SocketMap): Component => {
+    return {
+        signature: hash({template, paths}),
+        template,
+        paths,
+    }
+}
+
 export const createApp = (renderer: RendererFn, initialModel: {[key: string]: any}) => {
     window.Aludel = {}
 
@@ -88,7 +98,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             global
         )
 
-    const createComponent = (
+    const instantiateComponent = (
         template: ComponentTemplate,
         paths: SocketMap,
         outlet: ComponentInstance,
@@ -120,16 +130,29 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         if (actions['@init']) actions['@init']()
 
-        const create = (component: Component) => createComponent(component.template, component.paths, () => undefined, routerConfig)
+        return () => {
+            const componentCache: {[key: string]: ComponentInstance} = {}
+            const create = (component: Component) => {
+                if (!componentCache[component.signature])
+                    componentCache[component.signature] = instantiateComponent(
+                        component.template,
+                        component.paths,
+                        () => undefined,
+                        routerConfig
+                    )
 
-        return () => template.render({
-            model: model(),
-            actions,
-            outlet,
-            navigate: routerConfig.navigate,
-            locations: routerConfig.locations,
-            create,
-        })
+                return componentCache[component.signature]
+            }
+
+            return template.render({
+                model: model(),
+                actions,
+                outlet,
+                navigate: routerConfig.navigate,
+                locations: routerConfig.locations,
+                create,
+            })
+        }
     }
 
     const flattenRoutes = (
@@ -208,14 +231,14 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             (currentConfig: Component, restConfigs: Component[]): ComponentInstance => {
             const nextComponent = restConfigs.shift()
             if (nextComponent) {
-                return createComponent(
+                return instantiateComponent(
                     currentConfig.template,
                     currentConfig.paths,
                     chainComponents(nextComponent, restConfigs),
                     {locations, navigate}
                 )
             }
-            return createComponent(
+            return instantiateComponent(
                 currentConfig.template,
                 currentConfig.paths,
                 () => undefined,
@@ -287,7 +310,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             })
         } else {
             const topInstance =
-                createComponent(topComponent.template, topComponent.paths, () => undefined)
+                instantiateComponent(topComponent.template, topComponent.paths, () => undefined)
             modelStream.map(model => {
                 window.Aludel.model = model
                 renderer(rootElement, topInstance)
