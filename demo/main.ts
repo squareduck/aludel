@@ -20,8 +20,8 @@ const layoutTemplate: ComponentTemplate = {
     render: ({model, actions, navigate, outlet}) => {
         return [
             m('div.navbar', [
-                m('div.nav-home', {onclick: navigate.Home()}, 'Home'),
-                m('div.nav-tasks', {onclick: navigate.View({view: model.currentView || 'All'})}, 'Tasks'),
+                m('div.nav-home', {onclick: navigate('Home')}, 'Home'),
+                m('div.nav-tasks', {onclick: navigate('View', {view: model.currentView || 'All'})}, 'Tasks'),
                 m('div.nav-notes', 'Notes')
 			]),
             outlet()
@@ -64,7 +64,7 @@ const taskViewsTemplate: ComponentTemplate = {
         m('div.views', [
             m('div.view-list', Object.keys(model.views)
                 .map(name => m('div.view', {
-                    onclick: navigate.View({view: name}),
+                    onclick: navigate('View', {view: name}),
                     class: model.currentView === name ? 'active' : ''
                 }, name)))
         ]),
@@ -135,7 +135,7 @@ const taskTemplate: ComponentTemplate = {
     render: ({model, outlet, navigate}) => m('div', [
         'Task start',
         model.taskId,
-        m('button', {onclick: navigate.Tasks()}, 'Go to Tasks'),
+        m('button', {onclick: navigate('Tasks')}, 'Go to Tasks'),
         'Task end',
     ])
 }

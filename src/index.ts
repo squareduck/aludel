@@ -24,7 +24,8 @@ export interface RenderTools {
     outlet: ComponentInstance
     model: Model
     create: (component: Component) => ComponentInstance
-    navigate?: Navigation
+    locations: Locations
+    navigate: Function
 }
 
 export type ComponentInstance = () => any
@@ -42,7 +43,11 @@ export interface Route {
     subroutes?: RouteMap
 }
 
-export type Navigation = {[key: string]: Function}
+export type Locations = {[key: string]: Function}
+export interface RouterConfig {
+    navigate: Function
+    locations: Locations
+}
 
 export type FlatRouteMap = {[key: string]: FlatRoute | string}
 export interface FlatRouteCache {
@@ -87,8 +92,11 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
         template: ComponentTemplate,
         paths: SocketMap,
         outlet: ComponentInstance,
-        navigate?: Navigation,
+        routerConfig: RouterConfig,
     ): ComponentInstance => {
+        if (!routerConfig.navigate) routerConfig.navigate = () => undefined
+        if (!routerConfig.locations) routerConfig.locations = {}
+
         const model = () => localModel(template.sockets, paths)
 
         // TODO: Make sure all sockets have defined paths
@@ -112,9 +120,16 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         if (actions['@init']) actions['@init']()
 
-        const create = (component: Component) => createComponent(component.template, component.paths, () => undefined, navigate)
+        const create = (component: Component) => createComponent(component.template, component.paths, () => undefined, routerConfig)
 
-        return () => template.render({model: model(), actions, outlet: outlet, navigate, create})
+        return () => template.render({
+            model: model(),
+            actions,
+            outlet,
+            navigate: routerConfig.navigate,
+            locations: routerConfig.locations,
+            create,
+        })
     }
 
     const flattenRoutes = (
@@ -169,7 +184,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
         window.Aludel.routes = flatRoutes
 
-        const navigate = Object.keys(flatRoutes).reduce((acc: Navigation, path) => {
+        const locations = Object.keys(flatRoutes).reduce((acc: Locations, path) => {
             const route = flatRoutes[path]
             if (typeof route !== 'string') {
                 acc[route.name] =
@@ -178,6 +193,11 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             }
             return acc
         }, {})
+
+        const navigate = (name: string, params: {[key: string]: any}) => {
+            const route = locations[name]
+            if (route) return route(params)
+        }
 
         window.Aludel.navigate = navigate
 
@@ -192,14 +212,14 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                     currentConfig.template,
                     currentConfig.paths,
                     chainComponents(nextComponent, restConfigs),
-                    navigate
+                    {locations, navigate}
                 )
             }
             return createComponent(
                 currentConfig.template,
                 currentConfig.paths,
                 () => undefined,
-                navigate
+                {locations, navigate}
             )
         }
 
@@ -277,7 +297,6 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
     }
 
     return {
-        createComponent,
         start
     }
 }
