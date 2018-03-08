@@ -16,7 +16,8 @@
     "scripts": {
         "build": "npm run clean & tsc -p .",
         "app": "parcel ./demo",
-        "clean": "rm -rf ./dist"
+        "clean": "rm -rf ./dist",
+        "pages": "parcel build ./demo --out-dir ./ --public-url ./"
     },
     "license": "MIT",
     "devDependencies": {
