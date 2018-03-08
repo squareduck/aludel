@@ -11,10 +11,13 @@ const itemTemplate = createTemplate({
     sockets: ['items'],
     actions: {
         modify: (id) => (model: Model) => {
+            // Find clicked item and modify it
             const items = model.items.map(item => {
                 if (item.id === id) return item.set('name', item.name + '@')
                 return item
             })
+
+            // Return updated model
             return model.set('items', items)
         }
     },
@@ -25,4 +28,4 @@ const itemTemplate = createTemplate({
 
 export const itemComponent = createComponent(itemTemplate, {
     items: ['children', 'items']
-}, 'childrenItem')
+}, 'Children Item')

@@ -137,7 +137,7 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                     const postActionModel = (...args: any[]) =>
                         template.actions[action](...args)(localModel(template.sockets, paths))
                     acc[action] = (...args: any[]) => {
-                        console.log(`UPDATE: Component ${name || signature} Action ${action}`)
+                        console.log(`UPDATE: ${name || signature} @ ${action}`)
                         updateStream(syncModel(
                             postActionModel(...args),
                             template.sockets, 
@@ -306,10 +306,10 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                                 updateStream(action(resolved.values))
                             }
                         )
-                        console.log('RENDER: Route', path)
+                        console.log(`RENDER: ${route.name} (${path})`)
                         render(cachedRoute)
                     } else if (force) {
-                        console.log('RENDER: After update')
+                        console.log('RENDER: --')
                         render(cachedRoute)
                     }
                 }

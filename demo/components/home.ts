@@ -8,8 +8,12 @@ import {
 
 const homeTemplate = createTemplate({
     render: () => [
-        m('div', 'Choose demo:'),
+        m('h1', 'Aludel demo app'),
+        m('span', 'Open your browser console to see when notable events happen'),
+        m('br'),
+        m('span', 'Choose demo:'),
         m('a', {href: '/#/children'}, 'Children components'),
+        m('a', {href: '/#/subroutes'}, 'Subroutes'),
     ]
 })
 

@@ -18,7 +18,8 @@ const mainTemplate = createTemplate({
     },
     render: ({model, child}) => {
         return [
-            m('h1', 'Children components'),
+            m('h1', 'Child components'),
+            m('span', 'Child components must be declared in parent'),
             m('span', 'Items are created during /children route action'),
             m('span', 'Children components get item details as props (read only)'),
             m('span', 'Click on an item to modify it'),
@@ -33,4 +34,4 @@ const mainTemplate = createTemplate({
 
 export const mainComponent = createComponent(mainTemplate, {
     items: ['children', 'items']
-}, 'childrenMain')
+}, 'Children Main')
