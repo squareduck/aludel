@@ -1,7 +1,7 @@
-import * as flyd from 'flyd'
-import * as Immutable from 'seamless-immutable'
-import * as Mapper from 'url-mapper'
-import * as hash from 'object-hash'
+import flyd from 'flyd'
+import Immutable from 'seamless-immutable'
+import Mapper from 'url-mapper'
+import hash from 'object-hash'
 import createHistory from 'history/createBrowserHistory'
 
 export type Model = Immutable.ImmutableObject<{[key: string]: any}>
@@ -12,25 +12,30 @@ export type RouteRendererFn = (instance: ComponentInstance) => any
 export interface ComponentTemplate {
     sockets: string[]
     actions: ActionMap
+    children: {[key: string]: Component}
     render: RenderFn
 }
 
 export interface Component {
+    name?: string
     signature: string
     template: ComponentTemplate
     paths: SocketMap
 }
 
+export type Props = {[key: string]: any}
+
 export interface RenderTools {
     actions: ActionMap
     outlet: ComponentInstance
     model: Model
-    create: (component: Component) => ComponentInstance
+    child: {[key: string]: ComponentInstance}
+    props: Props
     locations: Locations
     navigate: Function
 }
 
-export type ComponentInstance = () => any
+export type ComponentInstance = (props: Props) => any
 export type RenderFn = (tools: RenderTools) => any
 export type Action = (...args: any[]) => (model: Model) => Model
 export type RouteAction = (params: {[key: string]: any}) => (model: Model) => Model
@@ -64,8 +69,26 @@ export interface FlatRoute {
 
 const urlMapper = Mapper({query: true})
 
-export const createComponent = (template: ComponentTemplate, paths: SocketMap): Component => {
+export const createTemplate = (template: {[key: string]: any}) => {
+    const defaults = {
+        sockets: [],
+        actions: {},
+        children: {},
+        render: () => {},
+    }
+
+    if (template.sockets) defaults.sockets = template.sockets
+    if (template.actions) defaults.actions = template.actions
+    if (template.children) defaults.children = template.children
+    if (template.render) defaults.render = template.render
+
+    return defaults
+}
+
+export const createComponent =
+    (template: ComponentTemplate, paths: SocketMap, name?: string): Component => {
     return {
+        name: name,
         signature: hash({template, paths}),
         template,
         paths,
@@ -89,70 +112,69 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
             Immutable({}) as Model
         )
 
-    const syncModel = (local: Model, sockets: string[], paths: SocketMap) => (global: Model) =>
-        sockets.reduce(
-            (acc, socket) => {
-                if (paths[socket]) return acc.setIn(paths[socket], local[socket])
-                return acc
-            },
-            global
-        )
+    const syncModel = (local: Model, sockets: string[], paths: SocketMap) =>
+        (global: Model) =>
+            sockets.reduce(
+                (acc, socket) => {
+                    if (paths[socket]) return acc.setIn(paths[socket], local[socket])
+                    return acc
+                },
+                global
+            )
 
     const instantiateComponent = (
-        template: ComponentTemplate,
-        paths: SocketMap,
+        {name, template, paths, signature}: Component,
         outlet: ComponentInstance,
         routerConfig: RouterConfig,
     ): ComponentInstance => {
-        if (!routerConfig.navigate) routerConfig.navigate = () => undefined
-        if (!routerConfig.locations) routerConfig.locations = {}
-
-        const model = () => localModel(template.sockets, paths)
-
         // TODO: Make sure all sockets have defined paths
-
-        const actions = Object
-            .keys(template.actions)
+        
+        console.log('CREATE: Component', name || signature)
+        const actions =
+            Object.keys(template.actions)
             .reduce(
                 (acc, action) => {
                     const postActionModel = (...args: any[]) =>
                         template.actions[action](...args)(localModel(template.sockets, paths))
-                    acc[action] = (...args: any[]) => 
+                    acc[action] = (...args: any[]) => {
+                        console.log(`UPDATE: Component ${name || signature} Action ${action}`)
                         updateStream(syncModel(
                             postActionModel(...args),
                             template.sockets, 
                             paths)
                         )
+                    }
                     return acc
                 },
                 {} as any
             )
 
-        if (actions['@init']) actions['@init']()
-        const componentCache: {[key: string]: ComponentInstance} = {}
-
-        return () => {
-            const create = (component: Component) => {
-                if (!componentCache[component.signature])
-                    componentCache[component.signature] = instantiateComponent(
-                        component.template,
-                        component.paths,
-                        () => undefined,
-                        routerConfig
+        const children =
+            Object.keys(template.children)
+            .reduce(
+                (acc, name) => {
+                    const child = template.children[name]
+                    acc[name] = instantiateComponent(
+                        child,
+                        () => {},
+                        routerConfig,
                     )
+                    return acc
+                },
+                {} as any
+            )
 
-                return componentCache[component.signature]
-            }
+        const model = () => localModel(template.sockets, paths)
 
-            return template.render({
+        return (props: Props) => template.render({
                 model: model(),
                 actions,
                 outlet,
                 navigate: routerConfig.navigate,
                 locations: routerConfig.locations,
-                create,
+                child: children,
+                props: props,
             })
-        }
     }
 
     const flattenRoutes = (
@@ -228,32 +250,33 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
         let lastValues: string
 
         const chainComponents =
-            (currentConfig: Component, restConfigs: Component[]): ComponentInstance => {
-            const nextComponent = restConfigs.shift()
+            (current: Component, rest: Component[]): ComponentInstance => {
+            const nextComponent = rest.shift()
             if (nextComponent) {
                 return instantiateComponent(
-                    currentConfig.template,
-                    currentConfig.paths,
-                    chainComponents(nextComponent, restConfigs),
+                    current,
+                    chainComponents(nextComponent, rest),
                     {locations, navigate}
                 )
             }
             return instantiateComponent(
-                currentConfig.template,
-                currentConfig.paths,
+                current,
                 () => undefined,
                 {locations, navigate}
             )
         }
 
         const updateRouterModel = (route: FlatRoute, params: any) => {
+            console.log('UPDATE: Router model')
             updateStream((model) =>
-                model.setIn(['$router', 'currentRoute'], {
+                model.setIn(['$router', 'current'], {
                     name: route.name,
                     params: params,
                 })
             )
         }
+
+        const routeCache = {}
 
         const navigateByPath = (path: string, force?: boolean) => {
             const resolved = urlMapper.map(path, flatRoutes)
@@ -263,9 +286,13 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                     history.push('#' + route, {})
                 } else {
                     const valuesString = JSON.stringify(resolved.values)
-                    if (!route.cache) {
-                        route.cache = chainComponents(topComponent, route.components.slice(0))
+                    let cachedRoute = routeCache[route.name]
+                    if (!cachedRoute) {
+                        console.log(' CACHE: Route', route.name)
+                        routeCache[route.name] =
+                            chainComponents(topComponent, route.components.slice(0))
                     }
+                    cachedRoute = routeCache[route.name]
                     if (
                         (lastRoute && route.name !== lastRoute.name) 
                         || lastValues !== valuesString
@@ -274,12 +301,16 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
                         lastValues = valuesString
                         updateRouterModel(route, resolved.values)
                         route.actions.forEach(
-                            (action: RouteAction) => updateStream(action(resolved.values))
+                            (action: RouteAction) => {
+                                console.log('UPDATE: Route action for', route.name)
+                                updateStream(action(resolved.values))
+                            }
                         )
-                        console.log('Rendering route', path)
-                        render(route.cache)
+                        console.log('RENDER: Route', path)
+                        render(cachedRoute)
                     } else if (force) {
-                        render(route.cache)
+                        console.log('RENDER: After update')
+                        render(cachedRoute)
                     }
                 }
             } else {
@@ -299,18 +330,22 @@ export const createApp = (renderer: RendererFn, initialModel: {[key: string]: an
 
     const start = (rootElement: HTMLElement, topComponent: Component, routes?: RouteMap) => {
         if (routes) {
-            const wrappedRenderer = createRouting(
+            const routingRenderer = createRouting(
                 routes,
                 topComponent,
                 (instance: ComponentInstance) => renderer(rootElement, instance)
             )
             modelStream.map(model => {
                 window.Aludel.model = model
-                wrappedRenderer(true)
+                routingRenderer(true)
             })
         } else {
             const topInstance =
-                instantiateComponent(topComponent.template, topComponent.paths, () => undefined)
+                instantiateComponent(
+                    topComponent,
+                    () => undefined,
+                    {navigate: () => {}, locations: {}}
+                )
             modelStream.map(model => {
                 window.Aludel.model = model
                 renderer(rootElement, topInstance)
