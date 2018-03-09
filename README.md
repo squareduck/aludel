@@ -6,10 +6,20 @@ Web framework with components living in subjective realities.
 
 ## Main principles
 
+Aludel aims to solve the Model part of Model -> View relationship in most
+VirtualDOM inspired libraries. There is no doubt that "View is a pure
+fuction of the Model" approach is working. But how exactly this Model should
+be implemented is up for a debate.
+
+Main design goal for Aludel is to define a strict protocol for reading and
+updating parts of global state and enforce it across all components.
+
 ### Declarative style
 
 Components have three stages:
-1. Component template - describes sockets, actions, and render function.
+
+1.  Component template - describes sockets, actions, and render function.
+
 ```
 //
 // Using mithril.js as renderer (but can be any Virtual Dom library)
@@ -26,7 +36,9 @@ const template = {
     }
 }
 ```
-2. Component - In addition to template contains "paths" (which is a lense into global model) for each socket, and optional name.
+
+2.  Component - In addition to template contains "paths" (which is a lense into global model) for each socket, and optional name.
+
 ```
 const component = {
     template: template,
@@ -35,13 +47,15 @@ const component = {
     }
 }
 ```
-3. Component instance - a function that returns "renderer-ready" value. This step is done by Aludel automatically when needed.
+
+3.  Component instance - a function that returns "renderer-ready" value. This step is done by Aludel automatically when needed.
 
 ### Immutable global state
 
 There is only place where state is stored. And all state is immutable (currently using seamless-immutable).
 
 State updates are performed by component or route actions which are simple functions:
+
 ```
 (currentState) => newState
 ```
@@ -50,22 +64,17 @@ But there is one detail. Component's view of the state is highly subjective.
 
 ### Subjective model
 
-
 Components don't have access to global state. Interaction with state is defined by component's sockets and paths.
 
-
 Sockets (defined at template stage) name all possible 'windows' into state.
-And paths describe an exact location in global state for corresponding  socket.
-
+And paths describe an exact location in global state for corresponding socket.
 
 A combination of all sockets and their paths define a local model for each component.
 This model is derived from global state, and any modifications to it (during actions) will be synchronized back into global state.
 
-### Routing 
-
+### Routing
 
 Routing in Aludel is optional. Routing is defined by a single object where keys are routing paths.
-
 
 Route action will be performed before component is rendered. It has the same local model as route component.
 
@@ -90,16 +99,13 @@ This object is passed to start function.
 ```
 const app = createApp(renderer, initialModel)
 app.start(document.body, topComponent, routes)
-
 ```
 
 If current route has subroutes, component's render function will
 have access to subroute component instance through 'outlet' function.
 Just invoking it should return a "renderer-ready" value.
 
-
 Navigation is available through "navigate('Route name', {route: 'params'})" function.
-
 
 ```
 const template = {
@@ -113,14 +119,12 @@ const template = {
 }
 ```
 
-
 ### Bring your own renderer
 
 In theory any virtual dom library can be used with Aludel.
 You have to define a renderer function which takes a DOM element
 and a component instance, and knows how to render it.
 This renderer function will be invoked on each global state update.
-
 
 ## Special thanks
 
