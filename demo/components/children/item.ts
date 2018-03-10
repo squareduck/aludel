@@ -18,7 +18,7 @@ const itemTemplate = createTemplate({
       })
 
       // Return updated model
-      return model.set('items', items)
+      return model.set('items', items).set('$local', 'TEST')
     },
   },
   render: ({ props, model, actions }) => {

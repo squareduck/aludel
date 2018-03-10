@@ -92,7 +92,7 @@ State updates are performed by component or route actions which are simple funct
 (currentState) => newState
 ```
 
-But there is one detail. Component's view of the state is highly subjective.
+But there is one caveat. Component's view of the state is highly subjective.
 
 ### Subjective model
 

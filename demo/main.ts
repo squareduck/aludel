@@ -58,4 +58,4 @@ const routes = {
   },
 }
 
-app.start(document.body, layoutComponent, routes)
+app(document.body, layoutComponent, routes)
