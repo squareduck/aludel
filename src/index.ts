@@ -89,7 +89,6 @@ export type RouteAction = (
     params: { [key: string]: any },
 ) => (model: Model) => Model
 
-
 // Route converted from initial routing tree with all subroutes flattened
 export interface FlatRoute {
     name: string
@@ -150,8 +149,15 @@ export const createComponent = (
     paths: SocketMap,
     name?: string,
 ): Component => {
-    // TODO: Make sure all sockets have defined paths
     const signature = hash({ template, paths })
+    // Check for any sockets with undefined paths
+    template.sockets.forEach((socket) => {
+        if (!paths[socket])
+            console.error(
+                `ERROR: No path defined for socket "${socket}" in component "${name ||
+                    signature}"`,
+            )
+    })
     paths['$local'] = ['$local', signature]
     return Immutable({
         name: name,
