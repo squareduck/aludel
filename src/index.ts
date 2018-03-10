@@ -7,6 +7,7 @@ import createHistory from 'history/createBrowserHistory'
 /*
  * App
  */
+
 export type StartFn = (
     rootElement: HTMLElement,
     topComponent: Component,
@@ -38,7 +39,7 @@ export type ActionMap = { [key: string]: Action }
 export type RenderFn = (tools: RenderTools) => any
 
 export interface ComponentTemplateMutable {
-    sockets: string[]
+    sockets: string[] // socket name
     actions: ActionMap
     children: { [key: string]: Component }
     render: RenderFn
@@ -51,7 +52,7 @@ export type SocketMap = { [key: string]: string[] }
 
 export interface ComponentMutable {
     name?: string
-    signature: string
+    signature: string // unique hash of component template + paths
     template: ComponentTemplate
     paths: SocketMap
 }
@@ -74,10 +75,7 @@ export interface RenderTools {
  * Routing
  */
 
-export type RouteAction = (
-    params: { [key: string]: any },
-) => (model: Model) => Model
-
+// Routing tree that will be passed to the app
 export type RouteMap = { [key: string]: Route | string }
 export interface Route {
     name: string
@@ -86,12 +84,13 @@ export interface Route {
     subroutes?: RouteMap
 }
 
-export type Locations = { [key: string]: Function }
-export interface RouterConfig {
-    navigate: Function
-    locations: Locations
-}
+// Wrapper around action tied to route change
+export type RouteAction = (
+    params: { [key: string]: any },
+) => (model: Model) => Model
 
+
+// Route converted from initial routing tree with all subroutes flattened
 export interface FlatRoute {
     name: string
     cache?: ComponentInstance
@@ -102,6 +101,12 @@ export interface FlatRoute {
 export type FlatRouteMap = { [key: string]: FlatRoute | string }
 export interface FlatRouteCache {
     instance: ComponentInstance
+}
+
+export type Locations = { [key: string]: Function }
+export interface RouterConfig {
+    navigate: Function
+    locations: Locations
 }
 
 /*
