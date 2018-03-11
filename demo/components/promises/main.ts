@@ -16,7 +16,6 @@ const mainTemplate = createTemplate({
     sockets: ['post'],
     actions: {
         '@init': () => (model: Model) => {
-            console.log('Compnent init')
             return model
                 .setIn(['$local', 'loading'], false)
                 .setIn(['post'], {})

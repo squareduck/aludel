@@ -11,7 +11,7 @@ import createHistory from 'history/createBrowserHistory'
 export type StartFn = (
     rootElement: HTMLElement,
     topComponent: Component,
-    routes?: RouteMap,
+    routerConfig?: RouterConfig,
 ) => void
 
 /*
@@ -47,25 +47,21 @@ export type ConnectedAction = (...args: any[]) => void
 
 export type RenderFn = (tools: RenderTools) => any
 
-export interface ComponentTemplateMutable {
+export interface ComponentTemplate {
     sockets: string[] // socket name
     actions: ActionMap
     children: { [key: string]: Component }
     render: RenderFn
 }
-export type ComponentTemplate = Immutable.ImmutableObject<
-    ComponentTemplateMutable
->
 
 export type SocketMap = { [key: string]: string[] }
 
-export interface ComponentMutable {
+export interface Component {
     name?: string
     signature: string // unique hash of component template + paths
     template: ComponentTemplate
     paths: SocketMap
 }
-export type Component = Immutable.ImmutableObject<ComponentMutable>
 
 export type ComponentInstance = (props: Props) => any
 export type Props = { [key: string]: any }
@@ -130,7 +126,6 @@ export interface RouterTools {
  * A valid template must contain all fields, so we fill in missing ones
  * with default values.
  *
- * Returns immutable object.
  */
 export const createTemplate = (template: {
     [key: string]: any
@@ -147,7 +142,7 @@ export const createTemplate = (template: {
     if (template.children) defaults.children = template.children
     if (template.render) defaults.render = template.render
 
-    return Immutable(defaults)
+    return defaults
 }
 
 /*
@@ -158,7 +153,6 @@ export const createTemplate = (template: {
  * created leading to ['$local', <signature>]. This allows each component to
  * have 'local' state.
  *
- * Returns immutable object.
  */
 export const createComponent = (
     template: ComponentTemplate,
@@ -174,13 +168,19 @@ export const createComponent = (
                     signature}"`,
             )
     })
+    // Add $local socket and path to template
     paths['$local'] = ['$local', signature]
-    return Immutable({
+    const localSockets = template.sockets.slice(0)
+    localSockets.push('$local')
+    const localTemplate = Object.assign({}, template)
+    localTemplate.sockets = localSockets
+
+    return {
         name: name,
         signature,
-        template: template.set('sockets', template.sockets.concat(['$local'])),
+        template: localTemplate,
         paths,
-    })
+    }
 }
 
 /*
@@ -195,7 +195,7 @@ export const createApp = (
     renderer: RendererFn,
     initialModel: { [key: string]: any },
 ): StartFn => {
-    window.Aludel = {}
+    window['Aludel'] = {}
 
     // Stream of update functions (actions)
     const updateStream = flyd.stream<UpdateFn>()
@@ -423,13 +423,13 @@ export const createApp = (
             return acc
         }, {})
 
-        window.Aludel.routes = flatRoutes
+        window['Aludel'].routes = flatRoutes
 
         const locations = Object.keys(flatRoutes).reduce(
             (acc: Locations, path) => {
                 const route = flatRoutes[path]
                 if (typeof route !== 'string') {
-                    acc[route.name] = (params: any) => (event = any) => {
+                    acc[route.name] = (params: any) => (event = {preventDefault: () => {}}) => {
                         if (
                             event['preventDefault'] &&
                             typeof event['preventDefault'] === 'function'
@@ -457,7 +457,7 @@ export const createApp = (
             if (route) return route(params)
         }
 
-        window.Aludel.navigate = navigate
+        window['Aludel'].navigate = navigate
 
         /*
          * Create a chain of components based on routing configuration.
@@ -614,7 +614,7 @@ export const createApp = (
                     renderer(rootElement, instance),
             )
             modelStream.map((model) => {
-                window.Aludel.model = model
+                window['Aludel'].model = model
                 routingRenderer()
             })
         } else {
@@ -628,7 +628,7 @@ export const createApp = (
                 },
             )
             modelStream.map((model) => {
-                window.Aludel.model = model
+                window['Aludel'].model = model
                 renderer(rootElement, topInstance)
             })
         }
