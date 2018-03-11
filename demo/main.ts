@@ -31,13 +31,6 @@ const routes = {
     '/children': {
         name: 'Children',
         component: childrenMainComponent,
-        action: () => (model: Model) => {
-            const items = []
-            for (let i = 0; i < 10; i++) {
-                items.push({ id: i, name: `Item #${i}` })
-            }
-            return model.set('items', items)
-        },
     },
     '/subroutes': {
         name: 'Subroutes',

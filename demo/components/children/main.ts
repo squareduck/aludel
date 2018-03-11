@@ -12,7 +12,16 @@ import { itemComponent } from './item'
 
 const mainTemplate = createTemplate({
     sockets: ['items'],
-    actions: {},
+    actions: {
+        '@init': () => (model: Model) => {
+            const items = []
+            for (let i = 0; i < 10; i++) {
+                items.push({ id: i, name: `Item #${i}` })
+            }
+            return model.set('items', items)
+        },
+
+    },
     children: {
         item: itemComponent,
     },
