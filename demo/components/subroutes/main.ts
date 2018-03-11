@@ -29,7 +29,12 @@ const mainTemplate = createTemplate({
             m('span', model.message || 'Default message'),
             m(
                 'a',
-                { href: link('Subroutes', { message: 'Message updated!' }) },
+                {
+                    href: link('Subroutes', { message: 'Message updated!' }),
+                    onclick: navigate('Subroutes', {
+                        message: 'Message updated!',
+                    }),
+                },
                 'Click me to update the message',
             ),
             m('input', {

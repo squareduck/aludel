@@ -15,7 +15,7 @@ function randomId() {
 const mainTemplate = createTemplate({
     sockets: ['post'],
     actions: {
-        '@init': () => (model: Model) => model.setIn(['$local', 'loading'], false).setIn(['post'], {}),
+        '@init': () => (model: Model) => model.setIn(['$local', 'loading'], true).setIn(['post'], {}),
         indicator: () => (model: Model) =>
             model.setIn(['$local', 'loading'], true),
         load: () =>

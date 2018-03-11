@@ -65,14 +65,16 @@ const routes = {
         action: ({ id }) =>
             fetch('https://jsonplaceholder.typicode.com/posts/' + id)
                 .then((response) => response.json())
-                .then((post) => (model: Model) => model.set('post', post)),
+                .then((post) => (model: Model) =>
+                    model.set('post', post).setIn(['$local', 'loading'], false),
+                ),
     },
 }
 
 const routerConfig = {
     routes: routes,
     rootPath: '/aludel',
-    defaultPath: '/'
+    defaultPath: '/',
 }
 
 app(document.body, layoutComponent, routerConfig)

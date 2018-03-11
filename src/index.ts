@@ -551,19 +551,19 @@ export const createApp = (
                     }
                 }
             } else {
-                history.push(flatRoutes['*'] || '', {})
+                const wildcardRoute = flatRoutes['*']
+                if (typeof wildcardRoute === 'string')
+                    history.push(wildcardRoute, {})
             }
         }
 
         history.listen((location, action) => {
-            const path = location.pathname
+            const path = location.pathname + location.search
             navigateByPath(path)
         })
 
-        history.push(defaultPath, {})
-
         return (force: boolean) =>
-            navigateByPath(history.location.pathname, force)
+            navigateByPath(history.location.pathname + history.location.search, force)
     }
 
     /*
