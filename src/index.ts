@@ -75,7 +75,8 @@ export interface RenderTools {
     child: { [key: string]: ComponentInstance }
     props: Props
     locations: Locations
-    navigate: Function
+    navigate: NavigateFn
+    link: LinkFn
 }
 
 /*
@@ -93,6 +94,7 @@ export interface Route {
 
 // Route converted from initial routing tree with all subroutes flattened
 export interface FlatRoute {
+    path: string
     name: string
     cache?: ComponentInstance
     components: Component[]
@@ -105,8 +107,11 @@ export interface FlatRouteCache {
 }
 
 export type Locations = { [key: string]: Function }
+export type LinkFn = (name: string, params: any) => string
+export type NavigateFn = (name: string, params: any) => void
 export interface RouterConfig {
-    navigate: Function
+    link: LinkFn
+    navigate: NavigateFn
     locations: Locations
 }
 
@@ -269,6 +274,8 @@ export const createApp = (
             {} as any,
         )
 
+        if (actions['@init']) actions['@init']()
+
         /*
          * Children components defined in template should inherit routing
          * configuration from parent (since they are created outside of
@@ -303,6 +310,7 @@ export const createApp = (
                 outlet,
                 navigate: routerConfig.navigate,
                 locations: routerConfig.locations,
+                link: routerConfig.link,
                 child: children,
                 props: props,
             })
@@ -337,6 +345,7 @@ export const createApp = (
                 }
                 localComponents.push(route.component)
                 acc[root + path] = {
+                    path: root + path,
                     name: route.name,
                     components: localComponents,
                     connectedActions: currentConnectedActions,
@@ -388,6 +397,14 @@ export const createApp = (
         const history = createHistory()
 
         const flatRoutes = flattenRoutes({}, '', Immutable([]), [], routes)
+        const flatRoutesByName = Object.keys(flatRoutes).reduce((acc, path) => {
+            const route = flatRoutes[path]
+            if (typeof route !== 'string') {
+                acc[route.name] = route
+            }
+
+            return acc
+        }, {})
 
         window.Aludel.routes = flatRoutes
 
@@ -397,7 +414,7 @@ export const createApp = (
                 if (typeof route !== 'string') {
                     acc[route.name] = (params: any) => () =>
                         history.push(
-                            '#' + urlMapper.stringify(path, params || {}),
+                            '/#' + urlMapper.stringify(path, params || {}),
                             {},
                         )
                 }
@@ -405,6 +422,12 @@ export const createApp = (
             },
             {},
         )
+
+        const link = (name: string, params: { [key: string]: any }) => {
+            const route = flatRoutesByName[name]
+            if (route)
+                return '/#' + urlMapper.stringify(route.path, params || {})
+        }
 
         const navigate = (name: string, params: { [key: string]: any }) => {
             const route = locations[name]
@@ -430,10 +453,11 @@ export const createApp = (
                 return instantiateComponent(
                     current,
                     chainComponents(nextComponent, rest),
-                    { locations, navigate },
+                    { locations, navigate, link },
                 )
             }
             return instantiateComponent(current, () => undefined, {
+                link,
                 locations,
                 navigate,
             })
@@ -560,6 +584,7 @@ export const createApp = (
                 () => undefined,
                 {
                     navigate: () => {},
+                    link: () => undefined,
                     locations: {},
                 },
             )
