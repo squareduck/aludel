@@ -34,7 +34,9 @@ export type UpdateFn = (model: Model) => Model
  * Components
  */
 
-export type Action = (...args: any[]) => UpdateFn | Promise<UpdateFn>
+export type Action = (
+    ...args: any[]
+) => (UpdateFn | Promise<UpdateFn>) | (UpdateFn | Promise<UpdateFn>)[]
 export type ActionMap = { [key: string]: Action }
 
 // Wrapper around Action that will call the action with local model and sync
@@ -246,14 +248,19 @@ export const createApp = (
         sockets: string[],
         paths: SocketMap,
     ): ConnectedAction => (...args) => {
-        const update = action(...args)
-        Promise.resolve(update)
-            .then((resolvedUpdate) =>
-                resolvedUpdate(localModel(sockets, paths)),
-            )
-            .then((newModel) =>
-                updateStream(syncModel(newModel, sockets, paths)),
-            )
+        let updateCollection = action(...args)
+        if (!Array.isArray(updateCollection)) {
+            updateCollection = [updateCollection]
+        }
+        updateCollection.forEach((update) =>
+            Promise.resolve(update)
+                .then((resolvedUpdate) =>
+                    resolvedUpdate(localModel(sockets, paths)),
+                )
+                .then((newModel) =>
+                    updateStream(syncModel(newModel, sockets, paths)),
+                ),
+        )
     }
 
     /*
@@ -281,7 +288,10 @@ export const createApp = (
             {} as any,
         )
 
-        if (actions['@init']) actions['@init']()
+        if (actions['@init']) {
+            console.log('UPDATE: Init action for', name || signature)
+            actions['@init']()
+        }
 
         /*
          * Children components defined in template should inherit routing
@@ -515,7 +525,7 @@ export const createApp = (
          * even if the route didn't chance since last time.
          *
          */
-        const navigateByPath = (path: string, force?: boolean) => {
+        const navigateByPath = (path: string): undefined | RenderFn => {
             const resolved = urlMapper.map(path, flatRoutes)
             if (resolved) {
                 const route = resolved.match
@@ -538,16 +548,13 @@ export const createApp = (
                     ) {
                         lastRoute = route
                         lastValues = valuesString
-                        route.connectedActions.forEach((action: Action) => {
+                        setTimeout(() => route.connectedActions.forEach((action: Action) => {
                             console.log('UPDATE: Route action for', route.name)
                             action(resolved.values)
-                        })
+                        }))
                         updateRouterModel(route, resolved.values)
-                        console.log(`RENDER: ${route.name} (${path})`)
-                        setTimeout(() => render(cachedRoute))
-                    } else if (force) {
-                        console.log('RENDER: --')
-                        setTimeout(() => render(cachedRoute))
+                    } else {
+                        return cachedRoute
                     }
                 }
             } else {
@@ -562,8 +569,16 @@ export const createApp = (
             navigateByPath(path)
         })
 
-        return (force: boolean) =>
-            navigateByPath(history.location.pathname + history.location.search, force)
+        return () => {
+            const chain = navigateByPath(
+                history.location.pathname + history.location.search,
+            )
+            if (chain)
+                setTimeout(() => {
+                    console.log('RENDER: --')
+                    render(chain)
+                })
+        }
     }
 
     /*
@@ -589,7 +604,7 @@ export const createApp = (
             )
             modelStream.map((model) => {
                 window.Aludel.model = model
-                routingRenderer(true)
+                routingRenderer()
             })
         } else {
             const topInstance = instantiateComponent(

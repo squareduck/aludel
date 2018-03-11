@@ -48,7 +48,9 @@ only ever see the world through the sockets defined on the component.
 
 **Actions** define state mutations which can be triggered at runtime. An action
 is a function that takes in optional parameters and return an _Update function_
-`(model: Model) => Model` or a Promise returning _Update function_.
+`(model: Model) => Model` or a Promise returning _Update function_. It is also
+possible to pass an array of _Update functions_ if a mix of synchronous and
+async model updates is needed for one action.
 
 The model passed to _Update function_ is a local model for component. Returned
 model will be synchronized with global state.
