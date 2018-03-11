@@ -31,7 +31,7 @@ const mainTemplate = createTemplate({
                 .catch((error) => (model: Model) =>
                     model
                         .set('post', { title: error })
-                        .setIn(['$local', 'loading']),
+                        .setIn(['$local', 'loading'], false),
                 ),
     },
     render: ({ model, actions }) => {
@@ -47,7 +47,7 @@ const mainTemplate = createTemplate({
             ),
             m('span', 'This demo fetches a post during routing action.'),
             m('span', 'But also can load a random post if you click a button.'),
-            m('span', 'There is a 20% chance that fetch will fail.'),
+            m('span', 'There is a 20% chance that fetch will fail (to show failure handling).'),
             m('br'),
             m(
                 'span',
