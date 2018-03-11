@@ -83,6 +83,13 @@ export interface RenderTools {
  * Routing
  */
 
+// Routing configuration passed to app.start()
+export interface RouterConfig {
+    routes: RouteMap
+    rootPath?: string
+    defaultPath?: string
+}
+
 // Routing tree that will be passed to the app
 export type RouteMap = { [key: string]: Route | string }
 export interface Route {
@@ -109,7 +116,7 @@ export interface FlatRouteCache {
 export type Locations = { [key: string]: Function }
 export type LinkFn = (name: string, params: any) => string
 export type NavigateFn = (name: string, params: any) => void
-export interface RouterConfig {
+export interface RouterTools {
     link: LinkFn
     navigate: NavigateFn
     locations: Locations
@@ -255,7 +262,7 @@ export const createApp = (
     const instantiateComponent = (
         { name, template, paths, signature }: Component,
         outlet: ComponentInstance,
-        routerConfig: RouterConfig,
+        routerConfig: RouterTools,
     ): ComponentInstance => {
         console.log('CREATE: Component instance', name || signature)
         /*
@@ -377,7 +384,7 @@ export const createApp = (
      *   Calling a function with optional parameters will navigate to the
      *   route by that name.
      *
-     * - TODO: link('Route name', {route: 'params'}) function that returns
+     * - link('Route name', {route: 'params'}) function that returns
      *   a string URL for a given route.
      *
      * Start listening to browser location changes and react by replacing
@@ -389,12 +396,12 @@ export const createApp = (
      * Returns a wrapped renderer that is aware of routing.
      */
     const createRouting = (
-        routes: RouteMap,
+        { routes, defaultPath = '/', rootPath = '' }: RouterConfig,
         topComponent: Component,
         render: RouteRendererFn,
     ) => {
         const urlMapper = Mapper({ query: true })
-        const history = createHistory()
+        const history = createHistory({ basename: rootPath })
 
         const flatRoutes = flattenRoutes({}, '', Immutable([]), [], routes)
         const flatRoutesByName = Object.keys(flatRoutes).reduce((acc, path) => {
@@ -412,11 +419,17 @@ export const createApp = (
             (acc: Locations, path) => {
                 const route = flatRoutes[path]
                 if (typeof route !== 'string') {
-                    acc[route.name] = (params: any) => () =>
+                    acc[route.name] = (params: any) => (event = any) => {
+                        if (
+                            event['preventDefault'] &&
+                            typeof event['preventDefault'] === 'function'
+                        )
+                            event.preventDefault()
                         history.push(
-                            '/#' + urlMapper.stringify(path, params || {}),
+                            urlMapper.stringify(path, params || {}),
                             {},
                         )
+                    }
                 }
                 return acc
             },
@@ -426,7 +439,7 @@ export const createApp = (
         const link = (name: string, params: { [key: string]: any }) => {
             const route = flatRoutesByName[name]
             if (route)
-                return '/#' + urlMapper.stringify(route.path, params || {})
+                return rootPath + urlMapper.stringify(route.path, params || {})
         }
 
         const navigate = (name: string, params: { [key: string]: any }) => {
@@ -507,7 +520,7 @@ export const createApp = (
             if (resolved) {
                 const route = resolved.match
                 if (typeof route === 'string') {
-                    history.push('#' + route, {})
+                    history.push(route, {})
                 } else {
                     const valuesString = JSON.stringify(resolved.values)
                     let cachedRoute = routeCache[route.name]
@@ -538,19 +551,19 @@ export const createApp = (
                     }
                 }
             } else {
-                history.push('#' + flatRoutes['*'], {})
+                history.push(flatRoutes['*'] || '', {})
             }
         }
 
         history.listen((location, action) => {
-            const path = location.hash.substring(1)
+            const path = location.pathname
             navigateByPath(path)
         })
 
-        history.push('/#/', {})
+        history.push(defaultPath, {})
 
         return (force: boolean) =>
-            navigateByPath(history.location.hash.substring(1), force)
+            navigateByPath(history.location.pathname, force)
     }
 
     /*
@@ -565,11 +578,11 @@ export const createApp = (
     const start = (
         rootElement: HTMLElement,
         topComponent: Component,
-        routes?: RouteMap,
+        routerConfig?: RouterConfig,
     ) => {
-        if (routes) {
+        if (routerConfig) {
             const routingRenderer = createRouting(
-                routes,
+                routerConfig,
                 topComponent,
                 (instance: ComponentInstance) =>
                     renderer(rootElement, instance),
