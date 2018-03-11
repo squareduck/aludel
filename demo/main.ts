@@ -54,20 +54,27 @@ const routes = {
     '/promises': {
         name: 'Promises',
         component: promisesComponent,
-        action: () =>
+        action: () => [
+            (model: Model) => model.setIn(['$local', 'loading'], true),
             fetch('https://jsonplaceholder.typicode.com/posts/1')
                 .then((response) => response.json())
-                .then((post) => (model: Model) => model.set('post', post)),
+                .then((post) => (model: Model) =>
+                    model.set('post', post).setIn(['$local', 'loading'], false),
+                ),
+        ],
     },
     '/promises/:id': {
         name: 'PromisesId',
         component: promisesComponent,
-        action: ({ id }) =>
+        action: ({ id }) => [
+            (model: Model) => model.setIn(['$local', 'loading'], true),
             fetch('https://jsonplaceholder.typicode.com/posts/' + id)
                 .then((response) => response.json())
                 .then((post) => (model: Model) =>
                     model.set('post', post).setIn(['$local', 'loading'], false),
                 ),
+
+        ]
     },
 }
 
