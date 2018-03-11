@@ -459,9 +459,6 @@ export const createApp = (
 
         window.Aludel.navigate = navigate
 
-        let lastRoute: Route
-        let lastValues: string
-
         /*
          * Create a chain of components based on routing configuration.
          * Each component will have an instance of the next component in routing
@@ -507,12 +504,17 @@ export const createApp = (
         // change. All variance is in the model.
         const routeCache = {}
 
+        // Remember last route and it's parameters
+        let lastRoute: Route
+        let lastValuesJSON: string
+        const isNewRoute = (name, values) =>
+            !lastRoute || lastRoute.name !== name || lastValuesJSON !== values
+
         /*
-         * Render route by given path.
+         * Activate route by given path.
          *
-         * If route is rendered for the first time we will create a new
-         * component chain based on route configuration. Then we put it
-         * in the cache.
+         * If route is rendered for the first time we will create and cache
+         * a new component chain based on route configuration.
          *
          * If the route is found in the cache, we simply reuse the old
          * component chain.
@@ -521,47 +523,57 @@ export const createApp = (
          * call to navigateByPath, we update the $router field in global
          * state and execute all actions associated with the route.
          *
-         * If 'force' parameter is set to true we rerender components
-         * even if the route didn't chance since last time.
+         * This will automatically trigger re-render because we at least
+         * add new update functino while changing $router state.
+         *
+         * Returns current component chain if the path was resolved to a new
+         * route and the route is different from previously rendered one.
+         * Otherwise returns undefined.
          *
          */
         const navigateByPath = (path: string): undefined | RenderFn => {
             const resolved = urlMapper.map(path, flatRoutes)
-            if (resolved) {
-                const route = resolved.match
-                if (typeof route === 'string') {
-                    history.push(route, {})
-                } else {
-                    const valuesString = JSON.stringify(resolved.values)
-                    let cachedRoute = routeCache[route.name]
-                    if (!cachedRoute) {
-                        console.log(' CACHE: Route', route.name)
-                        routeCache[route.name] = chainComponents(
-                            topComponent,
-                            route.components.slice(0),
-                        )
-                    }
-                    cachedRoute = routeCache[route.name]
-                    if (
-                        (lastRoute && route.name !== lastRoute.name) ||
-                        lastValues !== valuesString
-                    ) {
-                        lastRoute = route
-                        lastValues = valuesString
-                        setTimeout(() => route.connectedActions.forEach((action: Action) => {
-                            console.log('UPDATE: Route action for', route.name)
-                            action(resolved.values)
-                        }))
-                        updateRouterModel(route, resolved.values)
-                    } else {
-                        return cachedRoute
-                    }
-                }
-            } else {
+            if (!resolved) {
                 const wildcardRoute = flatRoutes['*']
                 if (typeof wildcardRoute === 'string')
                     history.push(wildcardRoute, {})
+                return
             }
+
+            const route = resolved.match
+            const valuesJSON = JSON.stringify(resolved.values)
+
+            // Redirect
+            if (typeof route === 'string') {
+                history.push(route, {})
+                return
+            }
+
+            if (!routeCache[route.name]) {
+                routeCache[route.name] = chainComponents(
+                    topComponent,
+                    route.components.slice(0),
+                )
+            }
+
+            const chain = routeCache[route.name]
+
+            if (isNewRoute(route.name, valuesJSON)) {
+                lastRoute = route
+                lastValuesJSON = valuesJSON
+                setTimeout(() => {
+                    route.connectedActions.forEach((action: Action) => {
+                        console.log(
+                            'UPDATE: Route action for',
+                            route.name,
+                            route.path,
+                        )
+                        action(resolved.values)
+                    })
+                    updateRouterModel(route, resolved.values)
+                })
+            }
+            return chain
         }
 
         history.listen((location, action) => {
@@ -570,9 +582,8 @@ export const createApp = (
         })
 
         return () => {
-            const chain = navigateByPath(
-                history.location.pathname + history.location.search,
-            )
+            const path = history.location.pathname + history.location.search
+            const chain = navigateByPath(path)
             if (chain)
                 setTimeout(() => {
                     console.log('RENDER: --')
