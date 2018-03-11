@@ -69,7 +69,7 @@ const routes = {
     '/promises/:id': {
         name: 'PromisesId',
         component: promisesComponent,
-        action: ({id}) =>
+        action: ({ id }) =>
             fetch('https://jsonplaceholder.typicode.com/posts/' + id)
                 .then((response) => response.json())
                 .then((post) => (model: Model) => model.set('post', post)),

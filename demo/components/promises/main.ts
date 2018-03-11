@@ -18,7 +18,8 @@ const mainTemplate = createTemplate({
         load: () =>
             fetch(`https://jsonplaceholder.typicode.com/posts/${randomId()}`)
                 .then((response) => {
-                    if (!response.ok) throw `Fetch failed with status ${response.status}`
+                    if (!response.ok)
+                        throw `Fetch failed with status ${response.status}`
                     return response.json()
                 })
                 .then((json) => (model: Model) => model.set('post', json))
@@ -38,7 +39,10 @@ const mainTemplate = createTemplate({
             m('span', 'But also can load a random post if you click a button.'),
             m('span', 'There is a 20% chance that fetch will fail.'),
             m('br'),
-            m('span', 'Navigate to /promises/:id URL to load a post with particular id.')
+            m(
+                'span',
+                'Navigate to /promises/:id URL to load a post with particular id.',
+            ),
             m('br'),
             m('button', { onclick: actions.load }, 'Load random post'),
             m('br'),
