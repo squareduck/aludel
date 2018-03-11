@@ -23,8 +23,8 @@ const initialModel = {}
 const app = createApp(renderer, initialModel)
 
 const routes = {
-    '*': '/home',
-    '/home': {
+    // '*': '/home',
+    '/': {
         name: 'Home',
         component: homeComponent,
     },
@@ -69,4 +69,10 @@ const routes = {
     },
 }
 
-app(document.body, layoutComponent, routes)
+const routerConfig = {
+    routes: routes,
+    rootPath: '/aludel',
+    defaultPath: '/'
+}
+
+app(document.body, layoutComponent, routerConfig)

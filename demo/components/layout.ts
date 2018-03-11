@@ -8,10 +8,10 @@ import {
 
 const layoutTemplate = createTemplate({
     sockets: ['page'],
-    render: ({ model, link, outlet }) =>
+    render: ({ model, link, navigate, outlet }) =>
         m('div.app', [
             model.page !== 'Home'
-                ? m('a', { href: link('Home') }, 'Go home')
+                ? m('a', { href: link('Home'), onclick: navigate('Home') }, 'Go home')
                 : undefined,
             outlet(),
         ]),
