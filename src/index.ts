@@ -12,7 +12,7 @@ export type StartFn = (
     rootElement: HTMLElement,
     topComponent: Component,
     routes?: RouteMap,
-) => undefined
+) => void
 
 /*
  * Renderer
@@ -34,8 +34,15 @@ export type UpdateFn = (model: Model) => Model
  * Components
  */
 
-export type Action = (...args: any[]) => (model: Model) => Model
+export type Action = (...args: any[]) => UpdateFn | Promise<UpdateFn>
 export type ActionMap = { [key: string]: Action }
+
+// Wrapper around Action that will call the action with local model and sync
+// results back into global state.
+//
+// All of the above will be wrapped into UpdateFn and passed to UpdateStream
+export type ConnectedAction = (...args: any[]) => void
+
 export type RenderFn = (tools: RenderTools) => any
 
 export interface ComponentTemplateMutable {
@@ -80,21 +87,16 @@ export type RouteMap = { [key: string]: Route | string }
 export interface Route {
     name: string
     component: Component
-    action?: RouteAction
+    action?: Action
     subroutes?: RouteMap
 }
-
-// Wrapper around action tied to route change
-export type RouteAction = (
-    params: { [key: string]: any },
-) => (model: Model) => Model
 
 // Route converted from initial routing tree with all subroutes flattened
 export interface FlatRoute {
     name: string
     cache?: ComponentInstance
     components: Component[]
-    actions: RouteAction[]
+    actions: ConnectedAction[]
 }
 
 export type FlatRouteMap = { [key: string]: FlatRoute | string }
@@ -222,6 +224,23 @@ export const createApp = (
         }, global)
 
     /*
+     * Link raw action with updateStream of current app.
+     * 
+     * Handle promises if needed.
+     *
+     */
+    const connectAction = (
+        action: Action,
+        sockets: string[],
+        paths: SocketMap,
+    ): ConnectedAction => (...args) => {
+        const update = action(...args)
+        Promise.resolve(update).then((resolvedUpdate) =>
+            resolvedUpdate(localModel(sockets, paths)),
+        ).then(newModel => updateStream(syncModel(newModel, sockets, paths)))
+    }
+
+    /*
      * Create a "renderer-ready" function from component
      */
     const instantiateComponent = (
@@ -236,20 +255,7 @@ export const createApp = (
          */
         const actions = Object.keys(template.actions).reduce(
             (acc, action) => {
-                const localAction = (...args: any[]) =>
-                    template.actions[action](...args)(
-                        localModel(template.sockets, paths),
-                    )
-                acc[action] = (...args: any[]) => {
-                    console.log(`UPDATE: ${name || signature} @ ${action}`)
-                    updateStream(
-                        syncModel(
-                            localAction(...args),
-                            template.sockets,
-                            paths,
-                        ),
-                    )
-                }
+                acc[action] = connectAction(template.actions[action], template.sockets, paths)
                 return acc
             },
             {} as any,
@@ -301,28 +307,15 @@ export const createApp = (
     const flattenRoutes = (
         initialRoutes: FlatRouteMap,
         root: string,
-        actions: RouteAction[],
+        actions: ConnectedAction[],
         components: Component[],
         routes: RouteMap,
     ): FlatRouteMap => {
-        const prepareAction = (
-            action: RouteAction,
-            component: Component,
-        ): RouteAction => (params: any) =>
-            syncModel(
-                action(params)(
-                    localModel(component.template.sockets, component.paths),
-                ),
-                component.template.sockets,
-                component.paths,
-            )
-
         return Object.keys(routes).reduce((acc, path) => {
             const route = routes[path]
             const localComponents = components.slice(0)
             if (typeof route !== 'string') {
-                route.action &&
-                    actions.push(prepareAction(route.action, route.component))
+                route.action && actions.push(connectAction(route.action, route.component.template.sockets, route.component.paths))
                 localComponents.push(route.component)
                 acc[root + path] = {
                     name: route.name,
@@ -490,9 +483,9 @@ export const createApp = (
                         lastRoute = route
                         lastValues = valuesString
                         updateRouterModel(route, resolved.values)
-                        route.actions.forEach((action: RouteAction) => {
+                        route.actions.forEach((action: Action) => {
                             console.log('UPDATE: Route action for', route.name)
-                            updateStream(action(resolved.values))
+                            action(resolved.values)
                         })
                         console.log(`RENDER: ${route.name} (${path})`)
                         render(cachedRoute)

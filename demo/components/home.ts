@@ -14,6 +14,7 @@ const homeTemplate = createTemplate({
     m('span', 'Choose demo:'),
     m('a', { href: '/#/children' }, 'Children components'),
     m('a', { href: '/#/subroutes' }, 'Subroutes'),
+    m('a', { href: '/#/promises' }, 'Promises'),
   ],
 })
 
