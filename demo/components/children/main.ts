@@ -1,4 +1,5 @@
 import m from 'mithril'
+import Immutable from 'seamless-immutable'
 import {
   createTemplate,
   createComponent,
@@ -16,6 +17,7 @@ const mainTemplate = createTemplate({
     item: itemComponent,
   },
   render: ({ model, child }) => {
+    // const items = model.items || Immutable([])
     return [
       m('h1', 'Child components'),
       m('span', 'Child components must be declared in parent'),

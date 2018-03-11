@@ -96,7 +96,7 @@ export interface FlatRoute {
     name: string
     cache?: ComponentInstance
     components: Component[]
-    actions: ConnectedAction[]
+    connectedActions: Immutable.ImmutableArray<ConnectedAction>
 }
 
 export type FlatRouteMap = { [key: string]: FlatRoute | string }
@@ -235,9 +235,13 @@ export const createApp = (
         paths: SocketMap,
     ): ConnectedAction => (...args) => {
         const update = action(...args)
-        Promise.resolve(update).then((resolvedUpdate) =>
-            resolvedUpdate(localModel(sockets, paths)),
-        ).then(newModel => updateStream(syncModel(newModel, sockets, paths)))
+        Promise.resolve(update)
+            .then((resolvedUpdate) =>
+                resolvedUpdate(localModel(sockets, paths)),
+            )
+            .then((newModel) =>
+                updateStream(syncModel(newModel, sockets, paths)),
+            )
     }
 
     /*
@@ -255,7 +259,11 @@ export const createApp = (
          */
         const actions = Object.keys(template.actions).reduce(
             (acc, action) => {
-                acc[action] = connectAction(template.actions[action], template.sockets, paths)
+                acc[action] = connectAction(
+                    template.actions[action],
+                    template.sockets,
+                    paths,
+                )
                 return acc
             },
             {} as any,
@@ -307,7 +315,7 @@ export const createApp = (
     const flattenRoutes = (
         initialRoutes: FlatRouteMap,
         root: string,
-        actions: ConnectedAction[],
+        connectedActions: Immutable.ImmutableArray<ConnectedAction>,
         components: Component[],
         routes: RouteMap,
     ): FlatRouteMap => {
@@ -315,18 +323,29 @@ export const createApp = (
             const route = routes[path]
             const localComponents = components.slice(0)
             if (typeof route !== 'string') {
-                route.action && actions.push(connectAction(route.action, route.component.template.sockets, route.component.paths))
+                let currentConnectedActions
+                if (route.action) {
+                    currentConnectedActions = connectedActions.concat([
+                        connectAction(
+                            route.action,
+                            route.component.template.sockets,
+                            route.component.paths,
+                        ),
+                    ])
+                } else {
+                    currentConnectedActions = connectedActions
+                }
                 localComponents.push(route.component)
                 acc[root + path] = {
                     name: route.name,
                     components: localComponents,
-                    actions: actions,
+                    connectedActions: currentConnectedActions,
                 }
                 if (route.subroutes)
                     flattenRoutes(
                         acc,
                         root + path,
-                        actions.slice(0),
+                        currentConnectedActions,
                         localComponents,
                         route.subroutes,
                     )
@@ -368,7 +387,7 @@ export const createApp = (
         const urlMapper = Mapper({ query: true })
         const history = createHistory()
 
-        const flatRoutes = flattenRoutes({}, '', [], [], routes)
+        const flatRoutes = flattenRoutes({}, '', Immutable([]), [], routes)
 
         window.Aludel.routes = flatRoutes
 
@@ -482,16 +501,16 @@ export const createApp = (
                     ) {
                         lastRoute = route
                         lastValues = valuesString
-                        updateRouterModel(route, resolved.values)
-                        route.actions.forEach((action: Action) => {
+                        route.connectedActions.forEach((action: Action) => {
                             console.log('UPDATE: Route action for', route.name)
                             action(resolved.values)
                         })
+                        updateRouterModel(route, resolved.values)
                         console.log(`RENDER: ${route.name} (${path})`)
-                        render(cachedRoute)
+                        setTimeout(() => render(cachedRoute))
                     } else if (force) {
                         console.log('RENDER: --')
-                        render(cachedRoute)
+                        setTimeout(() => render(cachedRoute))
                     }
                 }
             } else {

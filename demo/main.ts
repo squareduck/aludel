@@ -66,6 +66,14 @@ const routes = {
                 .then((response) => response.json())
                 .then((post) => (model: Model) => model.set('post', post)),
     },
+    '/promises/:id': {
+        name: 'PromisesId',
+        component: promisesComponent,
+        action: ({id}) =>
+            fetch('https://jsonplaceholder.typicode.com/posts/' + id)
+                .then((response) => response.json())
+                .then((post) => (model: Model) => model.set('post', post)),
+    },
 }
 
 app(document.body, layoutComponent, routes)
