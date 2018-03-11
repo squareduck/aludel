@@ -274,6 +274,8 @@ export const createApp = (
             {} as any,
         )
 
+        if (actions['@init']) actions['@init']()
+
         /*
          * Children components defined in template should inherit routing
          * configuration from parent (since they are created outside of

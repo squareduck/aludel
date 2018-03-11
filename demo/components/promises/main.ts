@@ -15,6 +15,9 @@ function randomId() {
 const mainTemplate = createTemplate({
     sockets: ['post'],
     actions: {
+        '@init': () => (model: Model) => model.setIn(['$local', 'loading'], false).setIn(['post'], {}),
+        indicator: () => (model: Model) =>
+            model.setIn(['$local', 'loading'], true),
         load: () =>
             fetch(`https://jsonplaceholder.typicode.com/posts/${randomId()}`)
                 .then((response) => {
@@ -22,13 +25,20 @@ const mainTemplate = createTemplate({
                         throw `Fetch failed with status ${response.status}`
                     return response.json()
                 })
-                .then((json) => (model: Model) => model.set('post', json))
+                .then((json) => (model: Model) =>
+                    model.set('post', json).setIn(['$local', 'loading'], false),
+                )
                 .catch((error) => (model: Model) =>
-                    model.set('post', { title: error }),
+                    model
+                        .set('post', { title: error })
+                        .setIn(['$local', 'loading']),
                 ),
     },
     render: ({ model, actions }) => {
-        const post = model.post || {}
+        const loadWithIndicator = () => {
+            actions.indicator()
+            actions.load()
+        }
         return [
             m('h1', 'Promises'),
             m(
@@ -44,11 +54,11 @@ const mainTemplate = createTemplate({
                 'Navigate to /promises/:id URL to load a post with particular id.',
             ),
             m('br'),
-            m('button', { onclick: actions.load }, 'Load random post'),
+            m('button', { onclick: loadWithIndicator }, 'Load random post'),
             m('br'),
-            m('h2', post.title),
-            m('span', `(id: ${post.id})`),
-            m('span', post.body),
+            m('h2', model.$local.loading ? 'Loading...' : model.post.title),
+            m('span', `(id: ${model.post.id})`),
+            m('span', model.post.body),
         ]
     },
 })
