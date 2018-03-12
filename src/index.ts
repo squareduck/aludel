@@ -63,7 +63,7 @@ export interface Component {
     paths: SocketMap
 }
 
-export type ComponentInstance = (props: Props) => any
+export type ComponentInstance = (props?: Props) => any
 export type Props = { [key: string]: any }
 
 export interface RenderTools {
@@ -329,7 +329,7 @@ export const createApp = (
                 locations: routerConfig.locations,
                 link: routerConfig.link,
                 child: children,
-                props: props,
+                props: props || {},
             })
     }
 

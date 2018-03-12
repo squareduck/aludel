@@ -4,6 +4,7 @@ import {
     Model,
     ComponentTemplate,
     Component,
+    ComponentInstance
 } from '../src/index'
 import m from 'mithril'
 
@@ -14,7 +15,7 @@ import { mainComponent as subroutesMainComponent } from './components/subroutes/
 import { personComponent as subroutePersonComponent } from './components/subroutes/person'
 import { mainComponent as promisesComponent } from './components/promises/main'
 
-const renderer = (rootElement: HTMLElement, component: any) => {
+const renderer = (rootElement: HTMLElement, component: ComponentInstance) => {
     m.render(rootElement, component())
 }
 
