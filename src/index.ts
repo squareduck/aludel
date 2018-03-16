@@ -47,7 +47,7 @@ export type ConnectedAction = (...args: any[]) => void
 
 export type RenderFn = (tools: RenderTools) => any
 
-export interface ComponentTemplate {
+export type ComponentTemplate = {
     sockets: string[] // socket name
     actions: ActionMap
     children: { [key: string]: Component }
@@ -56,7 +56,7 @@ export interface ComponentTemplate {
 
 export type SocketMap = { [key: string]: string[] }
 
-export interface Component {
+export type Component = {
     name?: string
     signature: string // unique hash of component template + paths
     template: ComponentTemplate
@@ -66,7 +66,7 @@ export interface Component {
 export type ComponentInstance = (props?: Props) => any
 export type Props = { [key: string]: any }
 
-export interface RenderTools {
+export type RenderTools = {
     actions: ActionMap
     outlet: ComponentInstance
     model: Model
@@ -82,7 +82,7 @@ export interface RenderTools {
  */
 
 // Routing configuration passed to app.start()
-export interface RouterConfig {
+export type RouterConfig = {
     routes: RouteMap
     rootPath?: string
     defaultPath?: string
@@ -90,7 +90,7 @@ export interface RouterConfig {
 
 // Routing tree that will be passed to the app
 export type RouteMap = { [key: string]: Route | string }
-export interface Route {
+export type Route = {
     name: string
     component: Component
     action?: Action
@@ -98,7 +98,7 @@ export interface Route {
 }
 
 // Route converted from initial routing tree with all subroutes flattened
-export interface FlatRoute {
+export type FlatRoute = {
     path: string
     name: string
     cache?: ComponentInstance
@@ -107,14 +107,14 @@ export interface FlatRoute {
 }
 
 export type FlatRouteMap = { [key: string]: FlatRoute | string }
-export interface FlatRouteCache {
+export type FlatRouteCache = {
     instance: ComponentInstance
 }
 
 export type Locations = { [key: string]: Function }
 export type LinkFn = (name: string, params: any) => string
 export type NavigateFn = (name: string, params: any) => void
-export interface RouterTools {
+export type RouterTools = {
     link: LinkFn
     navigate: NavigateFn
     locations: Locations
@@ -161,7 +161,7 @@ export const createComponent = (
 ): Component => {
     const signature = hash({ template, paths })
     // Check for any sockets with undefined paths
-    template.sockets.forEach((socket) => {
+    template.sockets.forEach(socket => {
         if (!paths[socket])
             console.error(
                 `ERROR: No path defined for socket "${socket}" in component "${name ||
@@ -191,11 +191,16 @@ export const createComponent = (
  * Returns the 'start' function that actually starts the app.
  *
  */
+let debug = false
+let global = false
 export const createApp = (
     renderer: RendererFn,
     initialModel: { [key: string]: any },
+    config: { debug?: boolean; global?: boolean } = { debug: false },
 ): StartFn => {
-    window['Aludel'] = {}
+    if (config.debug) debug = true
+    if (config.global) global = true
+    if (global) window['Aludel'] = {}
 
     // Stream of update functions (actions)
     const updateStream = flyd.stream<UpdateFn>()
@@ -252,12 +257,12 @@ export const createApp = (
         if (!Array.isArray(updateCollection)) {
             updateCollection = [updateCollection]
         }
-        updateCollection.forEach((update) =>
+        updateCollection.forEach(update =>
             Promise.resolve(update)
-                .then((resolvedUpdate) =>
+                .then(resolvedUpdate =>
                     resolvedUpdate(localModel(sockets, paths)),
                 )
-                .then((newModel) =>
+                .then(newModel =>
                     updateStream(syncModel(newModel, sockets, paths)),
                 ),
         )
@@ -271,7 +276,7 @@ export const createApp = (
         outlet: ComponentInstance,
         routerConfig: RouterTools,
     ): ComponentInstance => {
-        console.log('CREATE: Component instance', name || signature)
+        if (debug) console.log('CREATE: Component instance', name || signature)
         /*
          * Actions should be executed against local model and their
          * result should be synchronised back into global state.
@@ -289,7 +294,7 @@ export const createApp = (
         )
 
         if (actions['@init']) {
-            console.log('UPDATE: Init action for', name || signature)
+            if (debug) console.log('UPDATE: Init action for', name || signature)
             actions['@init']()
         }
 
@@ -423,13 +428,15 @@ export const createApp = (
             return acc
         }, {})
 
-        window['Aludel'].routes = flatRoutes
+        if (global) window['Aludel'].routes = flatRoutes
 
         const locations = Object.keys(flatRoutes).reduce(
             (acc: Locations, path) => {
                 const route = flatRoutes[path]
                 if (typeof route !== 'string') {
-                    acc[route.name] = (params: any) => (event = {preventDefault: () => {}}) => {
+                    acc[route.name] = (params: any) => (
+                        event = { preventDefault: () => {} },
+                    ) => {
                         if (
                             event['preventDefault'] &&
                             typeof event['preventDefault'] === 'function'
@@ -457,7 +464,7 @@ export const createApp = (
             if (route) return route(params)
         }
 
-        window['Aludel'].navigate = navigate
+        if (global) window['Aludel'].navigate = navigate
 
         /*
          * Create a chain of components based on routing configuration.
@@ -490,8 +497,8 @@ export const createApp = (
          * and locations for that.
          */
         const updateRouterModel = (route: FlatRoute, params: any) => {
-            console.log('UPDATE: Router model')
-            updateStream((model) =>
+            if (debug) console.log('UPDATE: Router model')
+            updateStream(model =>
                 model.setIn(['$router', 'current'], {
                     name: route.name,
                     params: params,
@@ -563,11 +570,12 @@ export const createApp = (
                 lastValuesJSON = valuesJSON
                 setTimeout(() => {
                     route.connectedActions.forEach((action: Action) => {
-                        console.log(
-                            'UPDATE: Route action for',
-                            route.name,
-                            route.path,
-                        )
+                        if (debug)
+                            console.log(
+                                'UPDATE: Route action for',
+                                route.name,
+                                route.path,
+                            )
                         action(resolved.values)
                     })
                     updateRouterModel(route, resolved.values)
@@ -586,7 +594,7 @@ export const createApp = (
             const chain = navigateByPath(path)
             if (chain)
                 setTimeout(() => {
-                    console.log('RENDER: --')
+                    if (debug) console.log('RENDER: --')
                     render(chain)
                 })
         }
@@ -613,8 +621,8 @@ export const createApp = (
                 (instance: ComponentInstance) =>
                     renderer(rootElement, instance),
             )
-            modelStream.map((model) => {
-                window['Aludel'].model = model
+            modelStream.map(model => {
+                if (global) window['Aludel'].model = model
                 routingRenderer()
             })
         } else {
@@ -627,9 +635,12 @@ export const createApp = (
                     locations: {},
                 },
             )
-            modelStream.map((model) => {
-                window['Aludel'].model = model
-                renderer(rootElement, topInstance)
+            modelStream.map(model => {
+                if (global) window['Aludel'].model = model
+                setTimeout(() => {
+                    if (debug) console.log('RENDER: --')
+                    renderer(rootElement, topInstance)
+                })
             })
         }
     }

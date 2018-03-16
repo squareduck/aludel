@@ -19,15 +19,19 @@
         "app": "parcel ./demo",
         "clean": "rm -rf ./dist",
         "pages": "parcel build ./demo --out-dir ./ --public-url ./",
-        "test": "tsc; tape ./dist/test/**/*_test.js | tap-prettify -"
+        "test": "ava-ts"
     },
     "license": "MIT",
     "devDependencies": {
         "@types/history": "^4.6.2",
         "@types/mithril": "^1.1.12",
         "@types/seamless-immutable": "^7.1.1",
+        "@types/tape": "^4.2.32",
+        "ava": "^0.25.0",
+        "ava-ts": "^0.24.2",
         "mithril": "^1.1.6",
         "parcel-bundler": "^1.6.2",
+        "ts-node": "^5.0.1",
         "typescript": "^2.7.2"
     },
     "dependencies": {
