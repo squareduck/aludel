@@ -3,6 +3,18 @@ import Immutable from 'seamless-immutable'
 import Mapper from 'url-mapper'
 import hash from 'object-hash'
 import createHistory from 'history/createBrowserHistory'
+import {
+    applyConfig,
+    AppConfig,
+    setGlobal,
+    declarationError,
+    runtimeError,
+    log,
+    validateComponentPaths,
+    checkLocalModel,
+} from './debug'
+
+export { applyConfig as configure } from './debug'
 
 /*
  * App
@@ -159,15 +171,12 @@ export const createComponent = (
     paths: SocketMap,
     name?: string,
 ): Component => {
+    // Generate component-unique signature
     const signature = hash({ template, paths })
-    // Check for any sockets with undefined paths
-    template.sockets.forEach(socket => {
-        if (!paths[socket])
-            console.error(
-                `ERROR: No path defined for socket "${socket}" in component "${name ||
-                    signature}"`,
-            )
-    })
+
+    // Validation
+    validateComponentPaths(name || signature, template.sockets, paths)
+
     // Add $local socket and path to template
     paths['$local'] = ['$local', signature]
     const localSockets = template.sockets.slice(0)
@@ -191,16 +200,13 @@ export const createComponent = (
  * Returns the 'start' function that actually starts the app.
  *
  */
-let debug = false
-let global = false
 export const createApp = (
     renderer: RendererFn,
     initialModel: { [key: string]: any },
-    config: { debug?: boolean; global?: boolean } = { debug: false },
+    config: Partial<AppConfig> = {},
 ): StartFn => {
-    if (config.debug) debug = true
-    if (config.global) global = true
-    if (global) window['Aludel'] = {}
+    // App configuration
+    const appConfig = applyConfig(config)
 
     // Stream of update functions (actions)
     const updateStream = flyd.stream<UpdateFn>()
@@ -236,11 +242,12 @@ export const createApp = (
      */
     const syncModel = (local: Model, sockets: string[], paths: SocketMap) => (
         global: Model,
-    ) =>
-        sockets.reduce((acc, socket) => {
+    ) => {
+        return sockets.reduce((acc, socket) => {
             if (paths[socket]) return acc.setIn(paths[socket], local[socket])
             return acc
         }, global)
+    }
 
     /*
      * Link raw action with updateStream of current app.
@@ -249,6 +256,8 @@ export const createApp = (
      *
      */
     const connectAction = (
+        componentName: string,
+        actionName: string,
         action: Action,
         sockets: string[],
         paths: SocketMap,
@@ -257,14 +266,21 @@ export const createApp = (
         if (!Array.isArray(updateCollection)) {
             updateCollection = [updateCollection]
         }
-        updateCollection.forEach(update =>
+        updateCollection.forEach((update) =>
             Promise.resolve(update)
-                .then(resolvedUpdate =>
+                .then((resolvedUpdate) =>
                     resolvedUpdate(localModel(sockets, paths)),
                 )
-                .then(newModel =>
-                    updateStream(syncModel(newModel, sockets, paths)),
-                ),
+                .then((newModel) => {
+                    checkLocalModel(
+                        appConfig,
+                        componentName,
+                        actionName,
+                        newModel,
+                        sockets,
+                    )
+                    return updateStream(syncModel(newModel, sockets, paths))
+                }),
         )
     }
 
@@ -276,7 +292,7 @@ export const createApp = (
         outlet: ComponentInstance,
         routerConfig: RouterTools,
     ): ComponentInstance => {
-        if (debug) console.log('CREATE: Component instance', name || signature)
+        log(appConfig, 'CREATE: Component instance', name || signature)
         /*
          * Actions should be executed against local model and their
          * result should be synchronised back into global state.
@@ -284,6 +300,8 @@ export const createApp = (
         const actions = Object.keys(template.actions).reduce(
             (acc, action) => {
                 acc[action] = connectAction(
+                    name || signature,
+                    action,
                     template.actions[action],
                     template.sockets,
                     paths,
@@ -294,7 +312,7 @@ export const createApp = (
         )
 
         if (actions['@init']) {
-            if (debug) console.log('UPDATE: Init action for', name || signature)
+            log(appConfig, 'UPDATE: Init action for', name || signature)
             actions['@init']()
         }
 
@@ -357,6 +375,11 @@ export const createApp = (
                 if (route.action) {
                     currentConnectedActions = connectedActions.concat([
                         connectAction(
+                            `${route.component.name ||
+                                route.component.signature} on Route "${
+                                route.name
+                            }"`,
+                            'Route action',
                             route.action,
                             route.component.template.sockets,
                             route.component.paths,
@@ -428,7 +451,7 @@ export const createApp = (
             return acc
         }, {})
 
-        if (global) window['Aludel'].routes = flatRoutes
+        setGlobal(appConfig, 'routes', flatRoutes)
 
         const locations = Object.keys(flatRoutes).reduce(
             (acc: Locations, path) => {
@@ -464,7 +487,7 @@ export const createApp = (
             if (route) return route(params)
         }
 
-        if (global) window['Aludel'].navigate = navigate
+        setGlobal(appConfig, 'navigate', navigate)
 
         /*
          * Create a chain of components based on routing configuration.
@@ -497,8 +520,8 @@ export const createApp = (
          * and locations for that.
          */
         const updateRouterModel = (route: FlatRoute, params: any) => {
-            if (debug) console.log('UPDATE: Router model')
-            updateStream(model =>
+            log(appConfig, 'UPDATE: Router model')
+            updateStream((model) =>
                 model.setIn(['$router', 'current'], {
                     name: route.name,
                     params: params,
@@ -570,12 +593,12 @@ export const createApp = (
                 lastValuesJSON = valuesJSON
                 setTimeout(() => {
                     route.connectedActions.forEach((action: Action) => {
-                        if (debug)
-                            console.log(
-                                'UPDATE: Route action for',
-                                route.name,
-                                route.path,
-                            )
+                        log(
+                            appConfig,
+                            'UPDATE: Route action for',
+                            route.name,
+                            route.path,
+                        )
                         action(resolved.values)
                     })
                     updateRouterModel(route, resolved.values)
@@ -594,7 +617,7 @@ export const createApp = (
             const chain = navigateByPath(path)
             if (chain)
                 setTimeout(() => {
-                    if (debug) console.log('RENDER: --')
+                    log(appConfig, 'RENDER: --')
                     render(chain)
                 })
         }
@@ -621,8 +644,8 @@ export const createApp = (
                 (instance: ComponentInstance) =>
                     renderer(rootElement, instance),
             )
-            modelStream.map(model => {
-                if (global) window['Aludel'].model = model
+            modelStream.map((model) => {
+                setGlobal(appConfig, 'model', model)
                 routingRenderer()
             })
         } else {
@@ -635,10 +658,10 @@ export const createApp = (
                     locations: {},
                 },
             )
-            modelStream.map(model => {
-                if (global) window['Aludel'].model = model
+            modelStream.map((model) => {
+                setGlobal(appConfig, 'model', model)
                 setTimeout(() => {
-                    if (debug) console.log('RENDER: --')
+                    log(appConfig, 'RENDER: --')
                     renderer(rootElement, topInstance)
                 })
             })

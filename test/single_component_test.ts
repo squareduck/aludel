@@ -1,6 +1,8 @@
 import test from 'ava'
 import { createApp, createTemplate, createComponent } from '../src/index'
-import { create } from 'domain'
+import { setup } from './setup'
+
+setup()
 
 /*
  * In most cases we use callback tests and call t.end() in the renderer.
@@ -28,17 +30,26 @@ test.cb('Triggers @init action on Component before first render', t => {
             },
         },
         render: ({ model }) => {
-            return model.initialized
+            if (model.initialized) return 'OK'
+            return 'FAIL'
         },
     })
 
     const component = createComponent(template, { initialized: ['data'] })
 
     const renderer = (element, instance) => {
-        t.is(instance(), true)
+        t.is(instance(), 'OK')
         t.end()
     }
 
     const app = createApp(renderer, {})
     app({} as HTMLElement, component)
 })
+
+test.todo('Components with same template and paths have same signature')
+test.todo('Sockets and paths create proper local model')
+test.todo('Child components are available in parent render function')
+test.todo('Props are passed to child components')
+test.todo('Actions update global model')
+test.todo('Actions can be async')
+test.todo('Actions can represent an array of Update functions')
