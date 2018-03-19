@@ -6,10 +6,26 @@ import {
 } from '../src/component'
 import { createContext } from '../src/context'
 
+test('createComponent() throws error if paths does not match Template sockets', t => {
+    const template = createTemplate({
+        sockets: ['name', 'age'],
+    })
+
+    createComponent(template, {
+        name: ['this', 'matches'],
+        age: ['this', 'also', 'matches'],
+    })
+
+    t.throws(() => {
+        createComponent(template, {
+            name: ['this', 'matches'],
+            city: ['this', 'does', 'not'],
+        })
+    })
+})
+
 test('Instance returns result of Template render function', t => {
     const template = createTemplate({
-        sockets: [],
-        actions: {},
         render: () => {
             return 'content'
         },
@@ -17,7 +33,7 @@ test('Instance returns result of Template render function', t => {
 
     const component = createComponent(template, {})
 
-    const appContext = createContext()
+    const appContext = createContext({})
 
     const instance = createInstance(appContext, component)
 
@@ -27,7 +43,6 @@ test('Instance returns result of Template render function', t => {
 test('Instance can read local model defined by sockets and paths', t => {
     const template = createTemplate({
         sockets: ['name', 'age'],
-        actions: {},
         render: ({ model }) => {
             return model
         },
@@ -41,13 +56,158 @@ test('Instance can read local model defined by sockets and paths', t => {
     const initialState = {
         person: {
             name: 'John',
-            age: 21
-        }
+            age: 21,
+        },
     }
 
     const appContext = createContext(initialState)
 
     const instance = createInstance(appContext, component)
 
-    t.deepEqual({name: 'John', age: 21}, instance())
+    t.deepEqual({ name: 'John', age: 21 }, instance())
+})
+
+test('New local model returned from action is applied back to global state', t => {
+    /*
+     * Two components have a socket with the same path ['person', 'age'].
+     *
+     * actionComponent has a render function which:
+     * - Calls an action that modifies the 'age' field in local model
+     * - Renders the 'age' field from local model
+     *
+     * watcherComponent just renders the 'age' field from its own local model.
+     *
+     * First we check that action did not mutate local model inside current
+     * render function (actionComponent instance rendered initial age).
+     *
+     * Then we check that watcherInstance got updated age in its own local
+     * model.
+     *
+     * And finally we render actionComponent again to trigger its action and
+     * check if everything is updated as expected.
+     *
+     */
+
+    const actionTemplate = createTemplate({
+        sockets: ['name', 'age'],
+        actions: {
+            growUp: count => model => {
+                model.age += count
+                return model
+            },
+        },
+        render: ({ model, actions }) => {
+            actions.growUp(9)
+            return model.name + ' ' + model.age
+        },
+    })
+
+    const actionComponent = createComponent(actionTemplate, {
+        name: ['person', 'name'],
+        age: ['person', 'age'],
+    })
+
+    const watcherTemplate = createTemplate({
+        sockets: ['age'],
+        render: ({ model }) => {
+            return model.age
+        },
+    })
+
+    const watcherComponent = createComponent(watcherTemplate, {
+        age: ['person', 'age'],
+    })
+
+    const initialState = {
+        person: {
+            name: 'John',
+            age: 21,
+        },
+    }
+
+    const context = createContext(initialState)
+
+    const actionInstance = createInstance(context, actionComponent)
+    const watcherInstance = createInstance(context, watcherComponent)
+
+    t.is('John 21', actionInstance())
+
+    t.is(30, watcherInstance())
+
+    t.is('John 30', actionInstance())
+
+    t.is(39, watcherInstance())
+})
+
+test('Changes to local model produce new state (local immutability)', t => {
+    /*
+     * Two fields in initialModel are referencing the same array.
+     * We make sure that mutation of local model inside action affects
+     * only one field according to corresponding path.
+     *
+     * actionComponent has a socket with path to initialModel.mutatedList
+     *
+     * watcherComponent has sockets for both mutatedList and referenceList
+     *
+     * At the start both lists reference the same array.
+     *
+     * But as soon as we mutate one list in action, it becomes a new value
+     * and no longer shares a reference with original list.
+     *
+     * We prove it by pushing into array and checking array lengths.
+     *
+     * This means that we can mutate local model and still simulate global
+     * state immutability.
+     *
+     */
+    const actionTemplate = createTemplate({
+        sockets: ['list'],
+        actions: {
+            add: value => model => {
+                model.list.push(value)
+                return model
+            },
+        },
+        render: ({model, actions}) => {
+            actions.add('value')
+            return model.list.length
+        }
+    })
+
+    const actionComponent = createComponent(actionTemplate, {
+        list: ['mutatedList']
+    })
+
+    const watcherTemplate = createTemplate({
+        sockets: ['mutated', 'reference'],
+        render: ({model}) => {
+            return {
+                mutated: model.mutated.length,
+                reference: model.reference.length
+            }
+        }
+    })
+
+    const watcherComponent = createComponent(watcherTemplate, {
+        mutated: ['mutatedList'],
+        reference: ['referenceList']
+    })
+
+    const listSource = []
+    const initialModel = {
+        mutatedList: listSource,
+        referenceList: listSource,
+    }
+
+    const context = createContext(initialModel)
+
+    const actionInstance = createInstance(context, actionComponent)
+    const watcherInstance = createInstance(context, watcherComponent)
+
+    t.is(0, actionInstance())
+
+    t.deepEqual({
+        mutated: 1,
+        reference: 0
+    }, watcherInstance())
 })

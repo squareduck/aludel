@@ -33,6 +33,8 @@
     "dependencies": {
         "history": "^4.7.2",
         "immer": "^1.2.0",
+        "lodash.get": "^4.4.2",
+        "lodash.set": "^4.3.2",
         "object-hash": "^1.2.0",
         "url-mapper": "^2.0.0"
     },

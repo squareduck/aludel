@@ -1,3 +1,5 @@
+import { Context, Model, ConnectedActionMap } from './context'
+
 export type Partial<T> = { [P in keyof T]?: T[P] }
 
 /*
@@ -7,10 +9,17 @@ export type Partial<T> = { [P in keyof T]?: T[P] }
 export type Template = {
     sockets: string[]
     actions: { [key: string]: Action }
-    render: (RenderTools) => any
+    render: (tools: RenderTools) => any
 }
 
-export type Action = (...args) => (model: any) => any
+
+export type RenderTools = {
+    model: Model
+    actions: ConnectedActionMap
+}
+
+export type Action = (...args) => (model: Model) => Model
+export type ActionMap = { [key: string]: Action }
 
 export function createTemplate(config: Partial<Template>): Template {
     return Object.assign(
@@ -27,25 +36,34 @@ export function createTemplate(config: Partial<Template>): Template {
  * Create component
  */
 
-export type Paths = { [key: string]: string[] }
+export type PathMap = { [key: string]: (string | number)[] }
 
 export type Component = {
     template: Template
-    paths: Paths
+    paths: PathMap
 }
 
-export function createComponent(template: Template, paths: Paths): Component {
+export function createComponent(template: Template, paths: PathMap): Component {
+    // Check that we have same amount of paths and sockets
+    const equalAmount = Object.keys(paths).length === template.sockets.length
+    // Check that we have a path for each socket
+    const allSocketsCovered =
+        template.sockets.filter(
+            socket => Object.keys(paths).indexOf(socket) < 0,
+        ).length === 0
+    // If either is false we throw error
+    if (!equalAmount || !allSocketsCovered)
+        throw new Error(`Paths and sockets don't match.`)
+
     return {
         template,
-        paths,
+        paths
     }
 }
 
 /*
  * Create instance
  */
-
-import { Context } from './context'
 
 export type Instance = () => any
 
@@ -54,6 +72,8 @@ export function createInstance(
     component: Component,
 ): Instance {
     return () => {
-        return component.template.render({})
+        const model = context.localModel(component.paths)
+        const actions = context.connectActions(component.paths, component.template.actions)
+        return component.template.render({ model, actions })
     }
 }
