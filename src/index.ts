@@ -7,8 +7,6 @@ import {
     applyConfig,
     AppConfig,
     setGlobal,
-    declarationError,
-    runtimeError,
     log,
     validateComponentPaths,
     checkLocalModel,

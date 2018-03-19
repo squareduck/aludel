@@ -5,9 +5,7 @@ import {
     createComponent,
     configure,
 } from '../src/index'
-import { setup } from './setup'
-
-setup()
+import { config, configWithError } from './setup'
 
 /*
  * There are two kinds of validation:
@@ -17,7 +15,7 @@ setup()
  *
  */
 
-test('Validates that all Template sockets got paths in Component', t => {
+test('Validates that all Template sockets got paths in Component', (t) => {
     const template = createTemplate({
         sockets: ['name', 'age'],
     })
@@ -49,16 +47,20 @@ test('Validates that all Template sockets got paths in Component', t => {
 
 test.cb(
     'Validates that local model returned from action has proper shape',
-    t => {
+    (t) => {
         const template = createTemplate({
             sockets: ['name', 'age'],
             actions: {
-                addCity: () => model => {
-                    return model.set('city', 'Hong Kong')
+                addCity: () => (model) => {
+                    return model
+                        .set('age', model.age + 1)
+                        .set('city', 'Hong Kong')
                 },
             },
             render: ({ model, actions }) => {
-                actions.addCity()
+                // We increment age by 1 in action and check it here.
+                // Otherwise we'll get infinite rerendering.
+                if (model.age < 22) actions.addCity()
                 return model
             },
         })
@@ -74,7 +76,6 @@ test.cb(
                 name: 'John',
                 age: 21,
             })
-            t.end()
         }
 
         const model = {
@@ -84,12 +85,13 @@ test.cb(
             },
         }
 
-        const app = createApp(renderer, model)
+        const app = createApp(
+            renderer,
+            model,
+            configWithError(t, 'Action', 'addCity', '[city]'),
+        )
 
-        // Should throw when action returns local model with extra field
-        t.throws(() => {
-            app({} as HTMLElement, component)
-        })
+        app({} as HTMLElement, component)
     },
 )
 

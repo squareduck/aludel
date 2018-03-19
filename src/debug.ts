@@ -12,9 +12,10 @@ export type Partial<T> = { [P in keyof T]?: T[P] }
  * Application configuration
  * 
  * debugMessages      : Print messages about noteworthy actions
- * softErrors         : Don't throw on validation errors
  * globalObject       : Add useful methods and data to window.Aludel
  * runtimeValidations : Enable runtime validations and checks
+ * runtimeErrors      : Array storing runtime errors
+ * onError            : Function called when runtime error occurs
  * 
  */
 
@@ -23,6 +24,7 @@ export type AppConfig = {
     globalObject: boolean
     runtimeValidations: boolean
     runtimeErrors: AppError[]
+    onError: (error: AppError) => void
 }
 
 /*
@@ -41,6 +43,7 @@ export const applyConfig = (config: Partial<AppConfig>) => {
         globalObject: true,
         runtimeValidations: true,
         runtimeErrors: [],
+        onError: () => {}
     }
 
     return Object.assign(defaultConfig, config)
@@ -82,7 +85,8 @@ export const declarationError = (error: AppError) => {
 
 export const runtimeError = (appConfig, error: AppError) => {
     appConfig.runtimeErrors.push(error)
-    console.error(errorToString(error))
+    appConfig.onError(error)
+    if (appConfig.debugMessages) console.error(errorToString(error))
 }
 
 export const log = (appConfig: AppConfig, ...args) => {

@@ -1,14 +1,12 @@
 import test from 'ava'
 import { createApp, createTemplate, createComponent } from '../src/index'
-import { setup } from './setup'
-
-setup()
+import { config } from './setup'
 
 /*
  * In most cases we use callback tests and call t.end() in the renderer.
  */
 
-test.cb('Renders single component app', t => {
+test.cb('Renders single component app', (t) => {
     const template = createTemplate({})
 
     const component = createComponent(template, {})
@@ -17,15 +15,15 @@ test.cb('Renders single component app', t => {
         t.end()
     }
 
-    const app = createApp(renderer, {})
+    const app = createApp(renderer, {}, config)
     app({} as HTMLElement, component)
 })
 
-test.cb('Triggers @init action on Component before first render', t => {
+test.cb('Triggers @init action on Component before first render', (t) => {
     const template = createTemplate({
         sockets: ['initialized'],
         actions: {
-            '@init': () => model => {
+            '@init': () => (model) => {
                 return model.set('initialized', true)
             },
         },
@@ -42,7 +40,7 @@ test.cb('Triggers @init action on Component before first render', t => {
         t.end()
     }
 
-    const app = createApp(renderer, {})
+    const app = createApp(renderer, {}, config)
     app({} as HTMLElement, component)
 })
 
