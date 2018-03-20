@@ -1,7 +1,7 @@
 import get from 'lodash.get'
 import set from 'lodash.set'
 import produce from 'immer'
-import { Action, ActionMap, PathMap } from './component'
+import { Action, ActionMap, PathMap, Component, Instance } from './component'
 
 export type Model = { [key: string]: any }
 
@@ -16,7 +16,6 @@ function localModel(state, paths) {
         return acc
     }, {})
 }
-
 
 /*
  * Apply local model to global state.
@@ -38,12 +37,13 @@ function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
  */
 
 export type ConnectedAction = (...args) => void
-export type ConnectedActionMap = {[key: string]: ConnectedAction}
+export type ConnectedActionMap = { [key: string]: ConnectedAction }
 
 function connectActions(
     state: Model,
     paths: PathMap,
     actions: ActionMap,
+    onUpdate: UpdateFn,
 ): ConnectedActionMap {
     return Object.keys(actions).reduce((acc, name) => {
         const action = actions[name]
@@ -51,24 +51,36 @@ function connectActions(
             const model = localModel(state, paths)
             const change = produce(model, action(...args))
             state = applyLocalModel(state, paths, change)
+            onUpdate(state)
         }
         acc[name] = connectedAction
         return acc
     }, {})
 }
 
-/*
- * Create context and return a bunch of context-aware functions.
- * This is in practice an 'application instance'.
- *
- */
+export type UpdateFn = (state: Model) => void
 
 export type Context = {
     localModel: (paths: PathMap) => Model
     connectActions: (paths: PathMap, actions: ActionMap) => ConnectedActionMap
 }
 
-export function createContext(initialState: Model): Context {
+/*
+ * Create context and return a bunch of context-aware functions.
+ *
+ * Context takes in initial state and update callback.
+ *
+ * Update callback will be called after every action. In practice only
+ * actions can change global state. Global state is available inside of
+ * update callback, but it's not recommended to mutate it there. Such 
+ * mutations will not be tracked.
+ *
+ */
+
+export function createContext(
+    initialState: Model,
+    onUpdate: UpdateFn = () => {},
+): Context {
     // Internals of this state object will be mutated, but it should never leak
     // outside on its own.
     const state = Object.assign({}, initialState)
@@ -76,6 +88,6 @@ export function createContext(initialState: Model): Context {
     return {
         localModel: (paths: PathMap) => localModel(state, paths),
         connectActions: (paths: PathMap, actions: ActionMap) =>
-            connectActions(state, paths, actions),
+            connectActions(state, paths, actions, onUpdate),
     }
 }

@@ -96,8 +96,8 @@ test('New local model returned from action is applied back to global state', t =
                 return model
             },
         },
-        render: ({ model, actions }) => {
-            actions.growUp(9)
+        render: ({ model, action }) => {
+            action.growUp(9)
             return model.name + ' ' + model.age
         },
     })
@@ -159,6 +159,7 @@ test('Changes to local model produce new state (local immutability)', t => {
      * This means that we can mutate local model and still simulate global
      * state immutability.
      *
+     *
      */
     const actionTemplate = createTemplate({
         sockets: ['list'],
@@ -168,29 +169,29 @@ test('Changes to local model produce new state (local immutability)', t => {
                 return model
             },
         },
-        render: ({model, actions}) => {
-            actions.add('value')
+        render: ({ model, action }) => {
+            action.add('value')
             return model.list.length
-        }
+        },
     })
 
     const actionComponent = createComponent(actionTemplate, {
-        list: ['mutatedList']
+        list: ['mutatedList'],
     })
 
     const watcherTemplate = createTemplate({
         sockets: ['mutated', 'reference'],
-        render: ({model}) => {
+        render: ({ model }) => {
             return {
                 mutated: model.mutated.length,
-                reference: model.reference.length
+                reference: model.reference.length,
             }
-        }
+        },
     })
 
     const watcherComponent = createComponent(watcherTemplate, {
         mutated: ['mutatedList'],
-        reference: ['referenceList']
+        reference: ['referenceList'],
     })
 
     const listSource = []
@@ -206,8 +207,80 @@ test('Changes to local model produce new state (local immutability)', t => {
 
     t.is(0, actionInstance())
 
-    t.deepEqual({
-        mutated: 1,
-        reference: 0
-    }, watcherInstance())
+    t.deepEqual(
+        {
+            mutated: 1,
+            reference: 0,
+        },
+        watcherInstance(),
+    )
+})
+
+test.skip('Actions can return promises', t => {
+    let connectedAction
+    const template = createTemplate({
+        sockets: ['counter'],
+        actions: {
+            asyncIncrement: amount => model => {
+                return Promise.resolve(model.counter)
+                    .then(counter => counter + amount)
+                    .then(counter => {
+                        model.counter = counter
+                        return model
+                    })
+            },
+        },
+        render: ({model, action}) => {
+            connectedAction = action.asyncIncrement
+            return model.counter
+        }
+    })
+
+    const component = createComponent(template, {
+        counter: ['counter']
+    })
+
+    let renderCount = 0
+    let expectedValues = [50, 100, 150]
+    const context = createContext({counter: 0}, (state) => {
+        t.is(expectedValues[renderCount], state.counter)
+    })
+
+    const instance = createInstance(context, component)
+
+    instance()
+
+    connectedAction(50)
+    connectedAction(50)
+    connectedAction(50)
+})
+
+test('Components can declare child components and pass props to them', t => {
+    const childTemplate = createTemplate({
+        render: ({ props }) => {
+            return 'Child ' + props.name
+        },
+    })
+
+    const childComponent = createComponent(childTemplate, {})
+
+    const parentTemplate = createTemplate({
+        sockets: ['people'],
+        children: {
+            person: childComponent,
+        },
+        render: ({ model, child }) => {
+            return model.people.map(person => child.person({ name: person }))
+        },
+    })
+
+    const parentComponent = createComponent(parentTemplate, {
+        people: ['people'],
+    })
+
+    const context = createContext({ people: ['Ash', 'Bob', 'Cid'] })
+
+    const instance = createInstance(context, parentComponent)
+
+    t.deepEqual(['Child Ash', 'Child Bob', 'Child Cid'], instance())
 })

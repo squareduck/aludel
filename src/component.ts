@@ -8,14 +8,16 @@ export type Partial<T> = { [P in keyof T]?: T[P] }
 
 export type Template = {
     sockets: string[]
-    actions: { [key: string]: Action }
+    actions: ActionMap
+    children: ComponentMap
     render: (tools: RenderTools) => any
 }
 
-
 export type RenderTools = {
     model: Model
-    actions: ConnectedActionMap
+    action: ConnectedActionMap
+    child: InstanceMap
+    props: Model
 }
 
 export type Action = (...args) => (model: Model) => Model
@@ -26,6 +28,7 @@ export function createTemplate(config: Partial<Template>): Template {
         {
             sockets: [],
             actions: {},
+            children: {},
             render: () => {},
         },
         config,
@@ -43,6 +46,8 @@ export type Component = {
     paths: PathMap
 }
 
+export type ComponentMap = { [key: string]: Component }
+
 export function createComponent(template: Template, paths: PathMap): Component {
     // Check that we have same amount of paths and sockets
     const equalAmount = Object.keys(paths).length === template.sockets.length
@@ -57,7 +62,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
 
     return {
         template,
-        paths
+        paths,
     }
 }
 
@@ -65,15 +70,31 @@ export function createComponent(template: Template, paths: PathMap): Component {
  * Create instance
  */
 
-export type Instance = () => any
+export type Instance = (props?: Model) => any
+export type InstanceMap = { [key: string]: Instance }
 
 export function createInstance(
     context: Context,
     component: Component,
 ): Instance {
-    return () => {
+    const child = Object.keys(component.template.children).reduce(
+        (acc, name) => {
+            acc[name] = createInstance(
+                context,
+                component.template.children[name],
+            )
+            return acc
+        },
+        {},
+    )
+
+    return (props: Model = {}) => {
         const model = context.localModel(component.paths)
-        const actions = context.connectActions(component.paths, component.template.actions)
-        return component.template.render({ model, actions })
+        const action = context.connectActions(
+            component.paths,
+            component.template.actions,
+        )
+
+        return component.template.render({ model, action, child, props })
     }
 }

@@ -23,12 +23,12 @@
     "license": "MIT",
     "devDependencies": {
         "@types/history": "^4.6.2",
-        "@types/seamless-immutable": "^7.1.1",
         "ava": "^0.25.0",
         "ava-ts": "^0.24.2",
         "parcel-bundler": "^1.6.2",
         "ts-node": "^5.0.1",
-        "typescript": "^2.7.2"
+        "typescript": "^2.7.2",
+        "ultradom": "^2.3.0"
     },
     "dependencies": {
         "history": "^4.7.2",
