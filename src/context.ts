@@ -43,22 +43,23 @@ function connectActions(
     state: Model,
     paths: PathMap,
     actions: ActionMap,
-    onUpdate: UpdateFn,
+    onUpdate: StateUpdateFn,
 ): ConnectedActionMap {
     return Object.keys(actions).reduce((acc, name) => {
         const action = actions[name]
         const connectedAction = (...args) => {
             const model = localModel(state, paths)
-            const change = produce(model, action(...args))
-            state = applyLocalModel(state, paths, change)
-            onUpdate(state)
+            Promise.resolve(action(...args)(model)).then(change => {
+                state = applyLocalModel(state, paths, change)
+                onUpdate(state)
+            })
         }
         acc[name] = connectedAction
         return acc
     }, {})
 }
 
-export type UpdateFn = (state: Model) => void
+export type StateUpdateFn = (state: Model) => void
 
 export type Context = {
     localModel: (paths: PathMap) => Model
@@ -79,7 +80,7 @@ export type Context = {
 
 export function createContext(
     initialState: Model,
-    onUpdate: UpdateFn = () => {},
+    onUpdate: StateUpdateFn = () => {},
 ): Context {
     // Internals of this state object will be mutated, but it should never leak
     // outside on its own.

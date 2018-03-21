@@ -67,156 +67,47 @@ test('Instance can read local model defined by sockets and paths', t => {
     t.deepEqual({ name: 'John', age: 21 }, instance())
 })
 
-test('New local model returned from action is applied back to global state', t => {
-    /*
-     * Two components have a socket with the same path ['person', 'age'].
-     *
-     * actionComponent has a render function which:
-     * - Calls an action that modifies the 'age' field in local model
-     * - Renders the 'age' field from local model
-     *
-     * watcherComponent just renders the 'age' field from its own local model.
-     *
-     * First we check that action did not mutate local model inside current
-     * render function (actionComponent instance rendered initial age).
-     *
-     * Then we check that watcherInstance got updated age in its own local
-     * model.
-     *
-     * And finally we render actionComponent again to trigger its action and
-     * check if everything is updated as expected.
-     *
-     */
-
-    const actionTemplate = createTemplate({
-        sockets: ['name', 'age'],
-        actions: {
-            growUp: count => model => {
-                model.age += count
-                return model
+test.cb(
+    'New local model returned from action is applied back to global state',
+    t => {
+        let connectedAction
+        const template = createTemplate({
+            sockets: ['counter'],
+            actions: {
+                increment: count => model => {
+                    model.counter += count
+                    return model
+                },
             },
-        },
-        render: ({ model, action }) => {
-            action.growUp(9)
-            return model.name + ' ' + model.age
-        },
-    })
-
-    const actionComponent = createComponent(actionTemplate, {
-        name: ['person', 'name'],
-        age: ['person', 'age'],
-    })
-
-    const watcherTemplate = createTemplate({
-        sockets: ['age'],
-        render: ({ model }) => {
-            return model.age
-        },
-    })
-
-    const watcherComponent = createComponent(watcherTemplate, {
-        age: ['person', 'age'],
-    })
-
-    const initialState = {
-        person: {
-            name: 'John',
-            age: 21,
-        },
-    }
-
-    const context = createContext(initialState)
-
-    const actionInstance = createInstance(context, actionComponent)
-    const watcherInstance = createInstance(context, watcherComponent)
-
-    t.is('John 21', actionInstance())
-
-    t.is(30, watcherInstance())
-
-    t.is('John 30', actionInstance())
-
-    t.is(39, watcherInstance())
-})
-
-test('Changes to local model produce new state (local immutability)', t => {
-    /*
-     * Two fields in initialModel are referencing the same array.
-     * We make sure that mutation of local model inside action affects
-     * only one field according to corresponding path.
-     *
-     * actionComponent has a socket with path to initialModel.mutatedList
-     *
-     * watcherComponent has sockets for both mutatedList and referenceList
-     *
-     * At the start both lists reference the same array.
-     *
-     * But as soon as we mutate one list in action, it becomes a new value
-     * and no longer shares a reference with original list.
-     *
-     * We prove it by pushing into array and checking array lengths.
-     *
-     * This means that we can mutate local model and still simulate global
-     * state immutability.
-     *
-     *
-     */
-    const actionTemplate = createTemplate({
-        sockets: ['list'],
-        actions: {
-            add: value => model => {
-                model.list.push(value)
-                return model
+            render: ({ model, action }) => {
+                connectedAction = action.increment
+                return model.counter
             },
-        },
-        render: ({ model, action }) => {
-            action.add('value')
-            return model.list.length
-        },
-    })
+        })
 
-    const actionComponent = createComponent(actionTemplate, {
-        list: ['mutatedList'],
-    })
+        const component = createComponent(template, {
+            counter: ['counter'],
+        })
 
-    const watcherTemplate = createTemplate({
-        sockets: ['mutated', 'reference'],
-        render: ({ model }) => {
-            return {
-                mutated: model.mutated.length,
-                reference: model.reference.length,
-            }
-        },
-    })
+        let renderCount = 0
+        let expectedValues = [10, 20, 30]
+        const context = createContext({ counter: 0 }, state => {
+            t.is(expectedValues[renderCount], state.counter)
+            renderCount += 1
+            renderCount === 3 || t.end()
+        })
 
-    const watcherComponent = createComponent(watcherTemplate, {
-        mutated: ['mutatedList'],
-        reference: ['referenceList'],
-    })
+        const instance = createInstance(context, component)
 
-    const listSource = []
-    const initialModel = {
-        mutatedList: listSource,
-        referenceList: listSource,
-    }
+        t.is(0, instance())
 
-    const context = createContext(initialModel)
+        connectedAction(10)
+        connectedAction(10)
+        connectedAction(10)
+    },
+)
 
-    const actionInstance = createInstance(context, actionComponent)
-    const watcherInstance = createInstance(context, watcherComponent)
-
-    t.is(0, actionInstance())
-
-    t.deepEqual(
-        {
-            mutated: 1,
-            reference: 0,
-        },
-        watcherInstance(),
-    )
-})
-
-test.skip('Actions can return promises', t => {
+test.cb('Action can return a Promise of model', t => {
     let connectedAction
     const template = createTemplate({
         sockets: ['counter'],
@@ -230,20 +121,22 @@ test.skip('Actions can return promises', t => {
                     })
             },
         },
-        render: ({model, action}) => {
+        render: ({ model, action }) => {
             connectedAction = action.asyncIncrement
             return model.counter
-        }
+        },
     })
 
     const component = createComponent(template, {
-        counter: ['counter']
+        counter: ['counter'],
     })
 
     let renderCount = 0
     let expectedValues = [50, 100, 150]
-    const context = createContext({counter: 0}, (state) => {
+    const context = createContext({ counter: 0 }, state => {
         t.is(expectedValues[renderCount], state.counter)
+        renderCount += 1
+        renderCount === 3 || t.end()
     })
 
     const instance = createInstance(context, component)
