@@ -1,6 +1,6 @@
 import { createContext, Model } from './context'
 import { Component, Instance, createInstance } from './component'
-import { RouteMap } from './router'
+import { RouteMap, createRouter } from './router'
 
 /*
  * Create Aludel application.
@@ -48,13 +48,53 @@ export function createApp(
     }
 }
 
+/*
+ * Create a routed Aludel application.
+ *
+ * All comments from createApp still apply. But now we have a few additions.
+ *
+ * Routing tree is flattened and for each flat route we create a navigate
+ * action and a setRoute action.
+ *
+ * navigate action changes the browser state (URL).
+ * setRoute action changes $app.route state and puts proper component instance
+ * chain into $app.instance.
+ *
+ * We listen to browser state changes and call setRoute if URL matches one of
+ * defined routes.
+ *
+ * Component instance chains are cached after first use. We can do that because
+ * the only dynamic place in our app is global state.
+ *
+ * So changing route can happen in two paths:
+ * - Browser state changed by user -> setRoute action is triggered
+ * - Navigate action changes browser state -> setRoute action is triggered
+ *
+ */
 export function createRoutedApp(
     initialModel: Model,
     routes: RouteMap,
     render: (instance: Instance) => void,
 ): () => void {
-    let topInstance: Instance = () => {}
+    initialModel['$app'] = {
+        instance: () => {},
+        route: {}
+    }
+
+    createRouter(routes)
 
     return () => {
+        const context = createContext(initialModel, (state) => {
+            render(state['$app']['instance'])
+        })
+
+        const actions = context.connectActions({instance: ['$app','instance']}, {
+            setInstance: (instance) => (model) => {
+                model.instance = instance
+                return model
+            }
+        })
+
+        // actions.setInstance(createInstance(context, routes['/'].component))
     }
 }
