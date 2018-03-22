@@ -1,10 +1,10 @@
 import test from 'ava'
-import { createContext } from '../src/context'
 import {
     createTemplate,
     createComponent,
     createInstance,
-} from '../src/component'
+    createContext,
+} from '../src/index'
 
 test('Local model can resolve any paths in state', t => {
     const context = createContext({

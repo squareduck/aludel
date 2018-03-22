@@ -3,8 +3,8 @@ import {
     createTemplate,
     createComponent,
     createInstance,
-} from '../src/component'
-import { createContext } from '../src/context'
+    createContext,
+} from '../src/index'
 
 test('createComponent() throws error if paths does not match Template sockets', t => {
     const template = createTemplate({

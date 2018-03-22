@@ -1,9 +1,7 @@
 import test from 'ava'
-import {createTemplate, createComponent} from '../src/component'
-import {createContext} from '../src/context'
-import {createApp} from '../src/app'
+import {createTemplate, createComponent, createContext, createApp} from '../src/index'
 
-test('Single component app renders on global state updates', t => {
+test.cb('Single component app renders on global state updates', t => {
     let setName
     const template = createTemplate({
         sockets: ['name'],
@@ -29,12 +27,15 @@ test('Single component app renders on global state updates', t => {
     const app = createApp({name: 'John'}, component, (instance) => {
         t.is(expectedNames[updateCounter], instance())
         updateCounter += 1
+        updateCounter === 3 && t.end()
     })
 
     app()
 
-    // This should call onUpdate each time
-    setName('Ash')
-    setName('Bob')
-    setName('Cid')
+    // Need to wait for the next tick (promise needs to resolve before rerender)
+    setTimeout(() => {
+        setName('Ash')
+        setName('Bob')
+        setName('Cid')
+    })
 })
