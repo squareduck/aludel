@@ -202,3 +202,42 @@ test.cb('App state changes when setRoute is called', t => {
     router.setRoute.User({id: 12})
     router.setRoute.Comments()
 })
+
+test.cb('Route actions are executed in context of route component', t => {
+    const template = createTemplate({
+        sockets: ['counter'],
+        render: ({model}) => model.counter
+    })
+
+    const component = createComponent(template, {
+        counter: ['counter']
+    })
+
+    let renderCount = 0
+    const context = createContext({counter: 0}, state => {
+        if (renderCount === 1) // On second render we should have instance
+            t.is(50, state.$app.instance())
+        t.is(50, state.counter)
+        renderCount += 1
+        // Expect to have 2 renders total
+        renderCount === 2 && t.end()
+    })
+
+    const routes = {
+        '/': {
+            name: 'Home',
+            component: component,
+            action: () => (model) => {
+                model.counter += 50
+                return model
+            }
+        }
+    }
+
+    const router = createRouter(context, routes)
+
+    router.setRoute.Home()
+})
+
+test.todo('Navigate changes browser state and triggers setRoute')
+test.todo('Link generates correct links to routes')

@@ -122,8 +122,17 @@ function createRouteSetters(
     // Create Actions
     const actions = Object.keys(flatRoutes).reduce((acc, path) => {
         const route = flatRoutes[path]
-
         acc[route.name] = params => model => {
+            const lastIndex = route.componentChain.length - 1
+            if (route.actionChain[lastIndex]) {
+                const routeAction = context.connectActions(
+                    route.componentChain[lastIndex].paths,
+                    {
+                        action: route.actionChain[lastIndex],
+                    },
+                )
+                routeAction.action()
+            }
             model.route = {
                 name: route.name,
                 path: route.path,
@@ -158,6 +167,7 @@ function instantiateChain(context: Context, chain: Component[]): Instance {
  */
 export function createRouter(context: Context, routes: RouteMap): Router {
     const urlMapper = Mapper({ query: true })
+    // We need this check for Node compatibility
     const browserHistory =
         typeof window !== 'undefined'
             ? createBrowserHistory()
