@@ -1,7 +1,13 @@
-import { createTemplate, createComponent } from '../../src/index'
+import { h } from 'ultradom'
+import { createTemplate, createComponent, Component } from '../../src/index'
 
-const template = createTemplate({
-    render: ({navigate}) => {
-        return 'Home'
+const homeTemplate = createTemplate({
+    render: ({}) => {
+        return h('div', {class: 'page home'}, [
+            h('h1', {}, 'Aludel'),
+            h('h3', {}, 'Web framework with components living in subjective realities.')
+        ])
     }
 })
+
+export const homeComponent = createComponent(homeTemplate, {})
