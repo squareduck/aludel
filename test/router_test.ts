@@ -96,8 +96,8 @@ test('createRouter throws if two flat routes have the same name or the same path
 
     t.throws(() => {
         const routes = {
-            '/': {name: 'Home', component},
-            '/about': {name: 'Home', component},
+            '/': { name: 'Home', component },
+            '/about': { name: 'Home', component },
         }
 
         createRouter(context, routes)
@@ -105,7 +105,7 @@ test('createRouter throws if two flat routes have the same name or the same path
 
     t.throws(() => {
         const routes = {
-            '/user/profile': {name: 'UserProfile', component},
+            '/user/profile': { name: 'UserProfile', component },
             '/user': {
                 name: 'User',
                 component,
@@ -113,9 +113,9 @@ test('createRouter throws if two flat routes have the same name or the same path
                     '/profile': {
                         name: 'Profile',
                         component,
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
 
         createRouter(context, routes)
@@ -129,8 +129,8 @@ test('createRouter throws if some route does not start with /', t => {
 
     t.throws(() => {
         const routes = {
-            '/': {name: 'Home', component},
-            'about': {name: 'About', component},
+            '/': { name: 'Home', component },
+            about: { name: 'About', component },
         }
 
         createRouter(context, routes)
@@ -139,34 +139,30 @@ test('createRouter throws if some route does not start with /', t => {
 
 test.cb('App state changes when setRoute is called', t => {
     const homeTemplate = createTemplate({
-        render: () => 'Home'
+        render: () => 'Home',
     })
     const homeComponent = createComponent(homeTemplate, {})
 
     const userTemplate = createTemplate({
-        render: () => 'User'
+        render: () => 'User',
     })
     const userComponent = createComponent(userTemplate, {})
 
     const postsTemplate = createTemplate({
-        render: ({outlet}) => `Posts with ${outlet()}`
+        render: ({ outlet }) => `Posts with ${outlet()}`,
     })
     const postsComponent = createComponent(postsTemplate, {})
     const commentsTemplate = createTemplate({
-        render: () => 'Comments'
+        render: () => 'Comments',
     })
     const commentsComponent = createComponent(commentsTemplate, {})
 
     const expectedRoute = [
-        {path: '/', name: 'Home', params: {}},
-        {path: '/user/:id', name: 'User', params: {id: 12}},
-        {path: '/posts/comments', name: 'Comments', params: {}},
+        { path: '/', name: 'Home', params: {} },
+        { path: '/user/:id', name: 'User', params: { id: 12 } },
+        { path: '/posts/comments', name: 'Comments', params: {} },
     ]
-    const expectedRender = [
-        'Home',
-        'User',
-        'Posts with Comments'
-    ]
+    const expectedRender = ['Home', 'User', 'Posts with Comments']
     let renderCount = 0
     const context = createContext({}, state => {
         t.deepEqual(expectedRoute[renderCount], state.$app.route)
@@ -190,32 +186,33 @@ test.cb('App state changes when setRoute is called', t => {
             subroutes: {
                 '/comments': {
                     name: 'Comments',
-                    component: commentsComponent
-                }
-            }
-        }
+                    component: commentsComponent,
+                },
+            },
+        },
     }
 
     const router = createRouter(context, routes)
 
     router.setRoute.Home()
-    router.setRoute.User({id: 12})
+    router.setRoute.User({ id: 12 })
     router.setRoute.Comments()
 })
 
 test.cb('Route actions are executed in context of route component', t => {
     const template = createTemplate({
         sockets: ['counter'],
-        render: ({model}) => model.counter
+        render: ({ model }) => model.counter,
     })
 
     const component = createComponent(template, {
-        counter: ['counter']
+        counter: ['counter'],
     })
 
     let renderCount = 0
-    const context = createContext({counter: 0}, state => {
-        if (renderCount === 1) // On second render we should have instance
+    const context = createContext({ counter: 0 }, state => {
+        if (renderCount === 1)
+            // On second render we should have instance
             t.is(50, state.$app.instance())
         t.is(50, state.counter)
         renderCount += 1
@@ -227,11 +224,11 @@ test.cb('Route actions are executed in context of route component', t => {
         '/': {
             name: 'Home',
             component: component,
-            action: () => (model) => {
+            action: () => model => {
                 model.counter += 50
                 return model
-            }
-        }
+            },
+        },
     }
 
     const router = createRouter(context, routes)
@@ -239,5 +236,113 @@ test.cb('Route actions are executed in context of route component', t => {
     router.setRoute.Home()
 })
 
-test.todo('Navigate changes browser state and triggers setRoute')
-test.todo('Link generates correct links to routes')
+test.cb('Navigate changes browser state and triggers setRoute', t => {
+    const template = createTemplate({
+        sockets: ['counter'],
+        render: ({ model }) => model.counter,
+    })
+
+    const component = createComponent(template, {
+        counter: ['counter'],
+    })
+
+    let renderCount = 0
+    const context = createContext({ counter: 0 }, state => {
+        if (renderCount === 1)
+            // On second render we should have instance
+            t.is(50, state.$app.instance())
+        t.is(50, state.counter)
+        renderCount += 1
+        // Expect to have 2 renders total
+        renderCount === 2 && t.end()
+    })
+
+    const routes = {
+        '/': {
+            name: 'Home',
+            component: component,
+            action: () => model => {
+                model.counter += 50
+                return model
+            },
+        },
+    }
+
+    const router = createRouter(context, routes)
+
+    router.start()
+
+    router.navigate.Home()
+})
+
+test('Link generates correct links to routes', t => {
+    const template = createTemplate({})
+    const component = createComponent(template, {})
+    const context = createContext({})
+    const routes = {
+        '/': {
+            name: 'Home',
+            component,
+        },
+        '/users/:id': {
+            name: 'User',
+            component,
+        },
+        '/profile/:id': {
+            name: 'Profile',
+            component,
+            subroutes: {
+                '/details/:category': {
+                    name: 'Category',
+                    component,
+                },
+            },
+        },
+    }
+
+    const router = createRouter(context, routes)
+
+    t.is(router.link.Home(), '/')
+    t.is(router.link.User({ id: '15' }), '/users/15')
+
+    t.throws(() => {
+        // Not all parameters were supplied
+        router.link.User()
+    })
+
+    t.is(router.link.Profile({ id: '7' }), '/profile/7')
+    t.is(
+        router.link.Category({ id: '5', category: '12' }),
+        '/profile/5/details/12',
+    )
+})
+
+test.cb('Link and navigate are available in component render toolkit', t => {
+    const template = createTemplate({
+        render: ({ navigate, link }) => {
+            t.is(typeof navigate.Home, 'function')
+            t.is(typeof link.Home, 'function')
+            t.end()
+            return 'Home'
+        },
+    })
+
+    const component = createComponent(template, {})
+
+    const context = createContext({}, state => {
+        state.$app.instance()
+    })
+
+    const routes = {
+        '/': {
+            name: 'Home',
+            component: component,
+        },
+    }
+
+    const router = createRouter(context, routes)
+
+    router.start()
+
+    router.navigate.Home()
+})

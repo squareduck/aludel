@@ -18,7 +18,8 @@
         "app": "parcel ./demo",
         "clean": "rm -rf ./dist",
         "pages": "parcel build ./demo --out-dir ./ --public-url ./",
-        "test": "ava-ts ./test/**/*_test.ts"
+        "test": "ava-ts ./test/**/*_test.ts",
+        "match": "ava-ts ./test/**/*_test.ts --match"
     },
     "license": "MIT",
     "devDependencies": {

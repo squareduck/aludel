@@ -1,4 +1,5 @@
 import { Context, Model, ConnectedActionMap } from './context'
+import { NavigateMap, LinkMap } from './router'
 
 export type Partial<T> = { [P in keyof T]?: T[P] }
 
@@ -19,7 +20,8 @@ export type RenderTools = {
     child: InstanceMap
     props: Model
     outlet: Instance
-    navigate?: ConnectedActionMap
+    navigate: NavigateMap,
+    link: LinkMap
 }
 
 export type Action = (...args) => (model: Model) => Model
@@ -78,7 +80,15 @@ export type InstanceMap = { [key: string]: Instance }
 export function createInstance(
     context: Context,
     component: Component,
-    outlet: Instance = () => {},
+    tools: {
+        outlet: Instance
+        navigate: NavigateMap
+        link: LinkMap
+    } = {
+        outlet: () => {},
+        navigate: {},
+        link: {},
+    },
 ): Instance {
     const child = Object.keys(component.template.children).reduce(
         (acc, name) => {
@@ -98,6 +108,14 @@ export function createInstance(
             component.template.actions,
         )
 
-        return component.template.render({ model, action, child, props, outlet })
+        return component.template.render({
+            model,
+            action,
+            child,
+            props,
+            outlet: tools.outlet,
+            navigate: tools.navigate,
+            link: tools.link,
+        })
     }
 }

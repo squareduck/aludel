@@ -81,20 +81,17 @@ export function createRoutedApp(
         route: {}
     }
 
-    createRouter(routes)
 
     return () => {
         const context = createContext(initialModel, (state) => {
             render(state['$app']['instance'])
         })
 
-        const actions = context.connectActions({instance: ['$app','instance']}, {
-            setInstance: (instance) => (model) => {
-                model.instance = instance
-                return model
-            }
-        })
+        const router = createRouter(context, routes)
+        router.start()
 
-        // actions.setInstance(createInstance(context, routes['/'].component))
+        const root = router.flatRoutes['/']
+        if (!root) throw new Error('Root route "/" was not found in routes.')
+        router.navigate[root.name]()
     }
 }

@@ -11,13 +11,17 @@ import {
 import { Context, ConnectedActionMap } from './context'
 
 export type NavigateMap = {
-    [key: string]: (params: { [key: string]: any }) => void
+    [key: string]: (params?: { [key: string]: any }) => void
+}
+export type LinkMap = {
+    [key: string]: (params?: { [key: string]: any }) => string
 }
 
 export type Router = {
     flatRoutes: FlatRouteMap
-    navigate: NavigateMap // Actions that change Browser state (URL)
+    navigate: NavigateMap // Functions that change Browser state (URL)
     setRoute: ConnectedActionMap // Actions that change App state ($app)
+    link: LinkMap // Functions that return parametrized URL for route
     start: () => void // Starts listening to browser history
 }
 
@@ -100,7 +104,7 @@ function createNavigation(
     return Object.keys(flatRoutes).reduce((acc, path) => {
         const route = flatRoutes[path]
 
-        acc[route.name] = params => {
+        acc[route.name] = (params?) => {
             browserHistory.push(urlMapper.stringify(path, params || {}), {})
         }
 
@@ -118,6 +122,8 @@ function createNavigation(
 function createRouteSetters(
     context: Context,
     flatRoutes: FlatRouteMap,
+    navigate: NavigateMap,
+    link: LinkMap
 ): ConnectedActionMap {
     // Create Actions
     const actions = Object.keys(flatRoutes).reduce((acc, path) => {
@@ -138,7 +144,7 @@ function createRouteSetters(
                 path: route.path,
                 params: params || {},
             }
-            model.instance = instantiateChain(context, route.componentChain)
+            model.instance = instantiateChain(context, route.componentChain, navigate, link)
             return model
         }
 
@@ -151,13 +157,27 @@ function createRouteSetters(
     )
 }
 
-function instantiateChain(context: Context, chain: Component[]): Instance {
+function instantiateChain(context: Context, chain: Component[], navigate, link): Instance {
     let lastInstance = () => {}
     for (let i = chain.length - 1; i >= 0; i--) {
-        lastInstance = createInstance(context, chain[i], lastInstance)
+        lastInstance = createInstance(context, chain[i], {outlet: lastInstance, navigate, link })
     }
 
     return lastInstance
+}
+
+/*
+ * Create link generators for each flat route
+ *
+ */
+function createLink(urlMapper, flatRoutes: FlatRouteMap): LinkMap {
+    return Object.keys(flatRoutes).reduce((acc, path) => {
+        const route = flatRoutes[path]
+
+        acc[route.name] = (params = {}) => urlMapper.stringify(path, params)
+
+        return acc
+    }, {})
 }
 
 /*
@@ -175,12 +195,14 @@ export function createRouter(context: Context, routes: RouteMap): Router {
 
     const flatRoutes = flattenRoutes({}, [], [], '', [], [], routes)
     const navigate = createNavigation(urlMapper, browserHistory, flatRoutes)
-    const setRoute = createRouteSetters(context, flatRoutes)
+    const link = createLink(urlMapper, flatRoutes)
+    const setRoute = createRouteSetters(context, flatRoutes, navigate, link)
 
     return {
         flatRoutes,
         navigate,
         setRoute,
+        link,
         start: () => {
             browserHistory.listen((location, action) => {
                 const path = location.pathname + location.search
