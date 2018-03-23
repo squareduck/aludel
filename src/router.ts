@@ -123,7 +123,7 @@ function createRouteSetters(
     context: Context,
     flatRoutes: FlatRouteMap,
     navigate: NavigateMap,
-    link: LinkMap
+    link: LinkMap,
 ): ConnectedActionMap {
     // Create Actions
     const actions = Object.keys(flatRoutes).reduce((acc, path) => {
@@ -144,7 +144,12 @@ function createRouteSetters(
                 path: route.path,
                 params: params || {},
             }
-            model.instance = instantiateChain(context, route.componentChain, navigate, link)
+            model.instance = instantiateChain(
+                context,
+                route.componentChain,
+                navigate,
+                link,
+            )
             return model
         }
 
@@ -157,10 +162,19 @@ function createRouteSetters(
     )
 }
 
-function instantiateChain(context: Context, chain: Component[], navigate, link): Instance {
+function instantiateChain(
+    context: Context,
+    chain: Component[],
+    navigate,
+    link,
+): Instance {
     let lastInstance = () => {}
     for (let i = chain.length - 1; i >= 0; i--) {
-        lastInstance = createInstance(context, chain[i], {outlet: lastInstance, navigate, link })
+        lastInstance = createInstance(context, chain[i], {
+            outlet: lastInstance,
+            navigate,
+            link,
+        })
     }
 
     return lastInstance
@@ -185,7 +199,11 @@ function createLink(urlMapper, flatRoutes: FlatRouteMap): LinkMap {
  * Creates a navigation and route actions for each flat route.
  *
  */
-export function createRouter(context: Context, routes: RouteMap): Router {
+export function createRouter(
+    context: Context,
+    routes: RouteMap,
+    layoutComponent?: Component,
+): Router {
     const urlMapper = Mapper({ query: true })
     // We need this check for Node compatibility
     const browserHistory =
@@ -194,6 +212,14 @@ export function createRouter(context: Context, routes: RouteMap): Router {
             : createMemoryHistory()
 
     const flatRoutes = flattenRoutes({}, [], [], '', [], [], routes)
+
+    if (layoutComponent) {
+        Object.keys(flatRoutes).forEach(path => {
+            flatRoutes[path].componentChain.unshift(layoutComponent)
+            flatRoutes[path].actionChain.unshift(undefined)
+        })
+    }
+
     const navigate = createNavigation(urlMapper, browserHistory, flatRoutes)
     const link = createLink(urlMapper, flatRoutes)
     const setRoute = createRouteSetters(context, flatRoutes, navigate, link)

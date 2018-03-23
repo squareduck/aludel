@@ -89,6 +89,44 @@ test('createRoute flattens routes', t => {
     })
 })
 
+test('Layout route is rendered first in component chain', t => {
+    const layoutTemplate = createTemplate({
+        render: ({ outlet }) => {
+            return `Layout ${outlet}`
+        },
+    })
+    const layoutComponent = createComponent(layoutTemplate, {})
+
+    const homeTemplate = createTemplate({
+        render: () => 'Home',
+    })
+    const homeComponent = createComponent(homeTemplate, {})
+
+    const context = createContext({}, state => {
+        console.log(state.$app.instance)
+    })
+
+    const routes = {
+        '/': {
+            name: 'Home',
+            component: homeComponent,
+        },
+    }
+
+    const router = createRouter(context, routes, layoutComponent)
+
+    t.deepEqual(router.flatRoutes, {
+        '/': {
+            name: 'Home',
+            path: '/',
+            componentChain: [layoutComponent, homeComponent],
+            actionChain: [undefined, undefined]
+        }
+    })
+
+    router.navigate.Home()
+})
+
 test('createRouter throws if two flat routes have the same name or the same path', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
