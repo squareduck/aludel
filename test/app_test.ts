@@ -71,7 +71,7 @@ test.cb('Routed app renders the root route', t => {
     }
 
     t.throws(() => {
-        const badApp = createRoutedApp({}, badRoutes, () => {})
+        const badApp = createRoutedApp({}, {routes: badRoutes}, () => {})
         badApp()
     })
 
@@ -86,7 +86,7 @@ test.cb('Routed app renders the root route', t => {
         },
     }
 
-    const app = createRoutedApp({}, routes, instance => {
+    const app = createRoutedApp({}, {routes}, instance => {
         t.is('Home', instance())
         t.end()
     })

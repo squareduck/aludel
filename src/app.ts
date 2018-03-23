@@ -71,9 +71,14 @@ export function createApp(
  * - Navigate action changes browser state -> setRoute action is triggered
  *
  */
+export type RouterConfig = {
+    routes: RouteMap,
+    layoutComponent?: Component,
+}
+
 export function createRoutedApp(
     initialModel: Model,
-    routes: RouteMap,
+    routerConfig: RouterConfig,
     render: (instance: Instance) => void,
 ): () => void {
     initialModel['$app'] = {
@@ -87,7 +92,7 @@ export function createRoutedApp(
             render(state['$app']['instance'])
         })
 
-        const router = createRouter(context, routes)
+        const router = createRouter(context, routerConfig.routes, routerConfig.layoutComponent)
         router.start()
 
         const root = router.flatRoutes['/']

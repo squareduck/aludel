@@ -1,27 +1,16 @@
 import { h, patch } from 'ultradom'
-import { createTemplate, createComponent, createApp } from '../src/index'
+import { createRoutedApp } from '../src/index'
+import { layoutComponent } from './components/layout'
+import { homeComponent } from './components/home'
 
-const template = createTemplate({
-    sockets: ['counter'],
-    actions: {
-        increment: () => model => {
-            model.counter += 1
-            return model
-        },
-    },
-    render: ({ model, action }) => {
-        return h('div', {}, [
-            h('div', {}, model.counter),
-            h('button', { onclick: action.increment }, 'Increment'),
-        ])
-    },
-})
+const routes = {
+    '/': {
+        name: 'Home',
+        component: homeComponent,
+    }
+}
 
-const component = createComponent(template, {
-    counter: ['data', 'counter'],
-})
-
-const app = createApp({ data: { counter: 50 } }, component, instance => {
+const app = createRoutedApp({}, routes, instance => {
     const rootElement = document.querySelector('.app')
     rootElement && patch(instance(), rootElement)
 })
