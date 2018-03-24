@@ -1,3 +1,4 @@
+import hash from 'object-hash'
 import { Context, Model, ConnectedActionMap } from './context'
 import { NavigateMap, LinkMap } from './router'
 
@@ -46,6 +47,7 @@ export function createTemplate(config: Partial<Template>): Template {
 export type PathMap = { [key: string]: (string | number)[] }
 
 export type Component = {
+    signature: string
     template: Template
     paths: PathMap
 }
@@ -60,6 +62,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
         template.sockets.filter(
             socket => Object.keys(paths).indexOf(socket) < 0,
         ).length === 0
+
     // If either is false we throw error
     if (!equalAmount || !allSocketsCovered)
         throw new Error(`Paths and sockets don't match.`)
@@ -67,6 +70,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
     return {
         template,
         paths,
+        signature: hash({template, paths})
     }
 }
 

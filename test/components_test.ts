@@ -40,6 +40,25 @@ test('Instance returns result of Template render function', t => {
     t.is('content', instance())
 })
 
+test('createComponent gives component unique signature (same template and paths = same signature)', t => {
+    const firstTemplate = createTemplate({
+        sockets: ['one']
+    })
+
+    const secondTemplate = createTemplate({
+        sockets: ['two']
+    })
+
+    const firstComponent = createComponent(firstTemplate, {one: ['one']})
+    const secondComponent = createComponent(firstTemplate, {one: ['first']})
+    const thirdComponent = createComponent(secondTemplate, {two: ['two']})
+    const fourthComponent = createComponent(firstTemplate, {one: ['one']})
+
+    t.not(firstComponent.signature, secondComponent.signature)
+    t.not(firstComponent.signature, thirdComponent.signature)
+    t.is(firstComponent.signature, fourthComponent.signature)
+})
+
 test('Instance can read local model defined by sockets and paths', t => {
     const template = createTemplate({
         sockets: ['name', 'age'],
