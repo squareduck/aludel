@@ -117,6 +117,9 @@ export function createInstance(
         component.signature,
     )
 
+    if (action.$init)
+        action.$init()
+
     return (props: Model = {}) => {
         if (context.shouldRender(component.signature)) {
             const model = context.localModel(component.paths)

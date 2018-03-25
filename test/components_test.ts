@@ -198,6 +198,33 @@ test.cb('Components have access to per-component local state', t => {
     connectedAction('Hello')
 })
 
+test.cb('Component triggers $init action on instantiation', t => {
+    const template = createTemplate({
+        sockets: ['counter'],
+        actions: {
+            $init: () => (model) => {
+                model.counter = 21
+                return model
+            }
+        },
+        render: ({model}) => {
+            return model.counter
+        }
+    })
+
+    const component = createComponent(template, {
+        counter: ['data', 'counter']
+    })
+
+    const context = createContext({}, state => {
+        t.is(21, state.data.counter)
+        t.is(21, instance())
+        t.end()
+    })
+
+    const instance = createInstance(context, component)
+})
+
 test('Components can declare child components and pass props to them', t => {
     const childTemplate = createTemplate({
         render: ({ props }) => {
