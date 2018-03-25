@@ -168,6 +168,17 @@ function cachedRenderFor(
     if (registry[signature]) return registry[signature].cachedRender
 }
 
+/*
+ * Checks if we can safely use previous render result instead of recalculating
+ * the render function.
+ *
+ * If any one condition from the list below matches we rerender:
+ * - Last action does not have defined owner
+ * - Signature that we are trying to check is not registered in context
+ * - Candidate does not have cached render result
+ * - Candidate is the owner or depends on the owner of last action
+ *
+ */
 function shouldRender(contextState: ContextState, signature: string): boolean {
     // Last action had to registered owner, so just render
     if (!contextState.lastActionOwner) return true
@@ -175,6 +186,9 @@ function shouldRender(contextState: ContextState, signature: string): boolean {
     const actionOwner = contextState.lastActionOwner
     const candidate = contextState.registry[signature]
     if (candidate) {
+        // If we don't have cached render, just render
+        if (!candidate.cachedRender) return true
+        // If candidate is owner of action or depends on owner, just render
         if (
             candidate.component.signature === actionOwner ||
             candidate.dependencies.includes(actionOwner)

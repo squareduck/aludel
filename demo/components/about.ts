@@ -65,6 +65,8 @@ instance() // => VNode
                     `),
                 h1('State'),
                 h1('Context'),
+                p('Context glues components together and makes sure their actions run against the same global state.'),
+                p('It also keeps track of dependencies between components and reruns Component render function only when last action was initiated by dependent Component. Otherwise it just reuses last value returned from render function. We say that two components depend on each other when their paths intersect.'),
                 h1('Application'),
                 h1('Routing'),
             ]),
