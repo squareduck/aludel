@@ -42,17 +42,17 @@ test('Instance returns result of Template render function', t => {
 
 test('createComponent gives component unique signature (same template and paths = same signature)', t => {
     const firstTemplate = createTemplate({
-        sockets: ['one']
+        sockets: ['one'],
     })
 
     const secondTemplate = createTemplate({
-        sockets: ['two']
+        sockets: ['two'],
     })
 
-    const firstComponent = createComponent(firstTemplate, {one: ['one']})
-    const secondComponent = createComponent(firstTemplate, {one: ['first']})
-    const thirdComponent = createComponent(secondTemplate, {two: ['two']})
-    const fourthComponent = createComponent(firstTemplate, {one: ['one']})
+    const firstComponent = createComponent(firstTemplate, { one: ['one'] })
+    const secondComponent = createComponent(firstTemplate, { one: ['first'] })
+    const thirdComponent = createComponent(secondTemplate, { two: ['two'] })
+    const fourthComponent = createComponent(firstTemplate, { one: ['one'] })
 
     t.not(firstComponent.signature, secondComponent.signature)
     t.not(firstComponent.signature, thirdComponent.signature)
@@ -83,7 +83,7 @@ test('Instance can read local model defined by sockets and paths', t => {
 
     const instance = createInstance(appContext, component)
 
-    t.deepEqual({ name: 'John', age: 21 }, instance())
+    t.deepEqual({ $local: undefined, name: 'John', age: 21 }, instance())
 })
 
 test.cb(
@@ -165,6 +165,37 @@ test.cb('Action can return a Promise of model', t => {
     connectedAction(50)
     connectedAction(50)
     connectedAction(50)
+})
+
+test.cb('Components have access to per-component local state', t => {
+    let connectedAction
+    const template = createTemplate({
+        actions: {
+            setMessage: (message) => (model) => {
+                model.$local = message
+                return model
+            }
+        },
+        render: ({model, action}) => {
+            connectedAction = action.setMessage
+            return model.$local
+        }
+    })
+
+    const component = createComponent(template, {
+    })
+
+    const context = createContext({}, state => {
+        t.is('Hello', state.$local[component.signature])
+        t.is('Hello', instance())
+        t.end()
+    })
+
+    const instance = createInstance(context, component)
+
+    instance()
+
+    connectedAction('Hello')
 })
 
 test('Components can declare child components and pass props to them', t => {

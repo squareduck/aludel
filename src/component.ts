@@ -67,10 +67,14 @@ export function createComponent(template: Template, paths: PathMap): Component {
     if (!equalAmount || !allSocketsCovered)
         throw new Error(`Paths and sockets don't match.`)
 
+    const signature = hash({ template, paths })
+
+    paths.$local = ['$local', signature]
+
     return {
         template,
         paths,
-        signature: hash({ template, paths }),
+        signature,
     }
 }
 
@@ -115,7 +119,6 @@ export function createInstance(
 
     return (props: Model = {}) => {
         if (context.shouldRender(component.signature)) {
-
             const model = context.localModel(component.paths)
             const rendering = component.template.render({
                 model,
