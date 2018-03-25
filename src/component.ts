@@ -21,7 +21,7 @@ export type RenderTools = {
     child: InstanceMap
     props: Model
     outlet: Instance
-    navigate: NavigateMap,
+    navigate: NavigateMap
     link: LinkMap
 }
 
@@ -70,7 +70,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
     return {
         template,
         paths,
-        signature: hash({template, paths})
+        signature: hash({ template, paths }),
     }
 }
 
@@ -105,13 +105,13 @@ export function createInstance(
         {},
     )
 
+    const action = context.connectActions(
+        component.paths,
+        component.template.actions,
+    )
+
     return (props: Model = {}) => {
         const model = context.localModel(component.paths)
-        const action = context.connectActions(
-            component.paths,
-            component.template.actions,
-        )
-
         return component.template.render({
             model,
             action,

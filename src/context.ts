@@ -59,6 +59,11 @@ function connectActions(
     }, {})
 }
 
+export type ComponentRegistry = {[key: string]: {
+    component: Component,
+    dependencies: string[]
+}}
+
 export type StateUpdateFn = (state: Model) => void
 
 export type Context = {
@@ -85,6 +90,7 @@ export function createContext(
     // Internals of this state object will be mutated, but it should never leak
     // outside on its own.
     const state = Object.assign({}, initialState)
+    const changedPaths = []
 
     return {
         localModel: (paths: PathMap) => localModel(state, paths),
