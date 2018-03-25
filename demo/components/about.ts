@@ -48,6 +48,7 @@ const template = createTemplate({
                 p('A View function that should return rendered value based on current Local Model of component. Render function has access to many useful tools, such as "model", "action", and routing tools.'),
                 h2('Component'),
                 p('Defines how each socket in Template should find its value in Global State. Having this separate step allows us to have components with identical templates, but ponting into different parts of Global State.'),
+                p('Sometimes components need to store local data. For this purpose components are injected with "$local" path. It is still stored in Global State, but under special path "$local.<component signature>". So in practice it is local per-component state (available both in actions and render function).'),
                 code(`
 const component = createComponent(template, {
     counter: ['data', 'counter']
