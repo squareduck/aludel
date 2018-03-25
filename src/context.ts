@@ -25,7 +25,9 @@ function localModel(state, paths) {
  */
 function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
     return Object.keys(paths).reduce((acc, name) => {
-        return set(acc, paths[name], change[name])
+        if (change.hasOwnProperty(name))
+            return set(acc, paths[name], change[name])
+        return acc
     }, state)
 }
 

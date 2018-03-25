@@ -35,6 +35,35 @@ test('Local model can resolve any paths in state', t => {
     )
 })
 
+test.cb('Connected action can return partial model', t => {
+    const initialModel = {
+        user: {
+            name: 'John',
+            age: 21,
+        },
+    }
+
+    const context = createContext(initialModel, state => {
+        t.is('Ash', state.user.name)
+        t.is(21, state.user.age)
+        t.end()
+    })
+
+    const actions = {
+        setName: name => model => ({ name }),
+    }
+
+    const connectedActions = context.connectActions(
+        {
+            name: ['user', 'name'],
+            age: ['user', 'age'],
+        },
+        actions,
+    )
+
+    connectedActions.setName('Ash')
+})
+
 test.cb('Each global state change triggers onUpdate()', t => {
     const initialModel = {
         data: {
@@ -191,7 +220,7 @@ test.cb('Doesnt calculate render function if deps didnt change', t => {
         actions: {
             action: () => model => model,
         },
-        render: ({action}) => {
+        render: ({ action }) => {
             homeAction = action.action
             homeRenders += 1
             return 'Home'
@@ -209,7 +238,7 @@ test.cb('Doesnt calculate render function if deps didnt change', t => {
         actions: {
             action: () => model => model,
         },
-        render: ({action}) => {
+        render: ({ action }) => {
             userAction = action.action
             userRenders += 1
             return 'User'
@@ -226,7 +255,7 @@ test.cb('Doesnt calculate render function if deps didnt change', t => {
         actions: {
             action: () => model => model,
         },
-        render: ({action}) => {
+        render: ({ action }) => {
             bookAction = action.action
             bookRenders += 1
             return 'Book'
