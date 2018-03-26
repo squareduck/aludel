@@ -25,9 +25,14 @@ function localModel(state, paths) {
 }
 
 /*
- * Apply local model to global state.
+ * Apply Local Model to Global State.
  *
- * This should be the only place that mutates state.
+ * Looks at each field in Local Model and puts it back according
+ * to Component path with the same name.
+ * 
+ * Will not touch the field in Global State if it's omitted from Local Model.
+ * So if an action wants to ignore some parts of local model, it should make
+ * sure not to return corresponding fields.
  *
  */
 function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
@@ -39,15 +44,31 @@ function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
 }
 
 /*
- * Connect action functions to context.
+ * Connect Actions to Context.
  *
- * We wrap action into function that executes it in context of global state.
+ * Changes Template Actions into Connected Actions by wrapping their
+ * execution in a function. In that function we resolve Local Model,
+ * run the Action against it, and sync the result back into Global State.
+ * 
+ * As soon as Connected Action is finished we call Context's onUpdate
+ * function.
+ * 
+ * Result of running an Action is always treated as a Promise. So changes
+ * to Global State and calling of onUpdate will happen on the next tick
+ * of Event Loop.
+ * 
  * If signature was passed we put it into contextState.lastActionOwner to
- * indicate which component is responsible for last completed action.
+ * indicate which Component is responsible for last completed Action.
+ * This is used to calculate which Instances need to recalculate their
+ * render functions and update Context's Render Cache.
+ *
+ * Returns a map of Connected Actions that mirrors input Actions Map.
  *
  */
 
+// Action wired to Context
 export type ConnectedAction = (...args) => void
+// A map of named Connected Actions
 export type ConnectedActionMap = { [key: string]: ConnectedAction }
 
 function connectActions(
@@ -91,7 +112,10 @@ function createInstance(
     onUpdate: StateUpdateFn,
 ): Instance {
     // If instance is already cached we don't need to recalculate anything
-    const cachedInstance = cachedInstanceFor(contextState.registry, component.signature)
+    const cachedInstance = cachedInstanceFor(
+        contextState.registry,
+        component.signature,
+    )
     if (cachedInstance) return cachedInstance
 
     // Otherwise create a new instance and cache it
@@ -214,7 +238,6 @@ export type ComponentRegistry = {
  * action owner and recalculate render function only for them.
  *
  */
-
 function addDependency(registry: ComponentRegistry, component: Component) {
     const signature = component.signature
     if (!registry[signature])
@@ -234,38 +257,48 @@ function addDependency(registry: ComponentRegistry, component: Component) {
     })
 }
 
-function dependenciesFor(
-    registry: ComponentRegistry,
-    signature: string,
-): string[] {
-    if (registry[signature]) return registry[signature].dependencies
-}
-
+/*
+ * Add the output of Instance into Context's Render Cache.
+ * 
+ * We track Render results by their Components's signatures.
+ * 
+ */
 function addCachedRender(
     registry: ComponentRegistry,
     signature: string,
     rendering: any,
 ) {
-    if (registry[signature])
-        registry[signature].cachedRender = rendering
+    if (registry[signature]) registry[signature].cachedRender = rendering
 }
 
-function cachedRenderFor(
-    registry: ComponentRegistry,
-    signature: string,
-): any {
+/*
+ * Return cached Render result for Component with some signature.
+ *
+ */
+function cachedRenderFor(registry: ComponentRegistry, signature: string): any {
     if (registry[signature]) return registry[signature].cachedRender
 }
 
+/*
+ * Add the Instance to Contex't Instance Cache.
+ * 
+ * This allows us to skip recreating instances for same components.
+ * All dynamic parts of Instances (props and outlet) are passed to
+ * them as arguments.
+ *
+ */
 function addCachedInstance(
     registry: ComponentRegistry,
     signature: string,
     instance: Instance,
 ) {
-    if (registry[signature])
-        registry[signature].cachedInstance = instance
+    if (registry[signature]) registry[signature].cachedInstance = instance
 }
 
+/*
+ * Return cached Instance for Component with some signature.
+ * 
+ */
 function cachedInstanceFor(
     registry: ComponentRegistry,
     signature: string,
@@ -274,8 +307,8 @@ function cachedInstanceFor(
 }
 
 /*
- * Checks if we can safely use previous render result instead of recalculating
- * the render function.
+ * Checks if we can safely use previous Render result instead of recalculating
+ * the Render function.
  *
  * If any one condition from the list below matches we rerender:
  * - Last action does not have defined owner
@@ -306,13 +339,16 @@ function shouldRender(contextState: ContextState, signature: string): boolean {
     return true
 }
 
+// Function that will be called when some Connected Action is finished.
 export type StateUpdateFn = (state: Model) => void
 
+// Internal Context state.
 export type ContextState = {
     lastActionOwner?: string // Signature of component owner of last action
-    registry: ComponentRegistry // Registry of all instantiated components
+    registry: ComponentRegistry // Registry of caches for instantiated components
 }
 
+// Context that glues together different Components
 export type Context = {
     localModel: (paths: PathMap) => Model
     connectActions: (
@@ -328,19 +364,16 @@ export type Context = {
  *
  * Context takes in initial state and update callback.
  *
- * Update callback will be called after every action. In practice only
- * actions can change global state. Global state is available inside of
- * update callback, but it's not recommended to mutate it there. Such 
+ * Update callback will be called after every Action. In practice only
+ * Actions can change Global State. Global State is available inside of
+ * onUpdate callback, but it's not recommended to mutate it there. Such 
  * mutations will not be tracked.
  *
  */
-
 export function createContext(
     initialState: Model,
     onUpdate: StateUpdateFn = () => {},
 ): Context {
-    // Internals of this state object will be mutated, but it should never leak
-    // outside on its own.
     const state = Object.assign({}, initialState)
     const contextState: ContextState = {
         registry: {},
