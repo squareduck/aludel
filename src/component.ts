@@ -82,18 +82,16 @@ export function createComponent(template: Template, paths: PathMap): Component {
  * Create instance
  */
 
-export type Instance = (props?: Model) => any
+export type Instance = (props?: Model, outlet?: Instance) => any
 export type InstanceMap = { [key: string]: Instance }
 
 export function createInstance(
     context: Context,
     component: Component,
     tools: {
-        outlet: Instance
         navigate: NavigateMap
         link: LinkMap
     } = {
-        outlet: () => {},
         navigate: {},
         link: {},
     },
@@ -120,7 +118,7 @@ export function createInstance(
     if (action.$init)
         action.$init()
 
-    return (props: Model = {}) => {
+    return (props: Model = {}, outlet: Instance = () => {}) => {
         if (context.shouldRender(component.signature)) {
             const model = context.localModel(component.paths)
             const rendering = component.template.render({
@@ -128,7 +126,7 @@ export function createInstance(
                 action,
                 child,
                 props,
-                outlet: tools.outlet,
+                outlet,
                 navigate: tools.navigate,
                 link: tools.link,
             })

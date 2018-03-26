@@ -168,16 +168,16 @@ function instantiateChain(
     navigate,
     link,
 ): Instance {
-    let lastInstance = () => {}
-    for (let i = chain.length - 1; i >= 0; i--) {
-        lastInstance = createInstance(context, chain[i], {
-            outlet: lastInstance,
-            navigate,
-            link,
-        })
+    chain = chain.slice(0)
+    if (chain.length > 0) {
+        return (props: any) =>
+            createInstance(context, chain.shift(), { navigate, link })(
+                props,
+                instantiateChain(context, chain, navigate, link),
+            )
     }
 
-    return lastInstance
+    return (props: any) => {}
 }
 
 /*
