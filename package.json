@@ -1,7 +1,8 @@
 {
     "author": "Daniil Velichko <danvelduck@gmail.com>",
     "name": "aludel",
-    "description": "Web app framework with global store and tightly scoped components",
+    "description":
+        "Web app framework with global store and tightly scoped components",
     "version": "0.0.10",
     "homepage": "https://github.com/squareduck/aludel",
     "repository": {
@@ -15,7 +16,7 @@
     "typings": "dist/src/index",
     "scripts": {
         "build": "npm run clean & tsc -p .",
-        "app": "parcel ./demo",
+        "app": "parcel ./demo/index.html",
         "clean": "rm -rf ./dist",
         "pages": "parcel build ./demo --out-dir ./ --public-url ./",
         "test": "ava-ts ./test/**/*_test.ts",
@@ -38,8 +39,5 @@
         "object-hash": "^1.2.0",
         "url-mapper": "^2.0.0"
     },
-    "files": [
-        "dist/src/index.js",
-        "dist/src/index.d.ts"
-    ]
+    "files": ["dist/src/index.js", "dist/src/index.d.ts"]
 }

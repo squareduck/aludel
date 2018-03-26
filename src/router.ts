@@ -1,6 +1,7 @@
 import Mapper from 'url-mapper'
 import createBrowserHistory from 'history/createBrowserHistory'
 import createMemoryHistory from 'history/createMemoryHistory'
+import History from 'history'
 import {
     Component,
     Instance,
@@ -22,6 +23,7 @@ export type Router = {
     navigate: NavigateMap // Functions that change Browser state (URL)
     setRoute: ConnectedActionMap // Actions that change App state ($app)
     link: LinkMap // Functions that return parametrized URL for route
+    history: History.History // Browser history
     start: () => void // Starts listening to browser history
 }
 
@@ -32,7 +34,7 @@ export type Route = {
     action?: Action
 }
 
-export type RouteMap = { [key: string]: Route }
+export type RouteMap = { [key: string]: Route | string }
 
 export type FlatRoute = {
     name: string
@@ -41,7 +43,7 @@ export type FlatRoute = {
     actionChain: Action[]
 }
 
-export type FlatRouteMap = { [key: string]: FlatRoute }
+export type FlatRouteMap = { [key: string]: FlatRoute | string }
 
 function flattenRoutes(
     flatRoutes: FlatRouteMap,
@@ -54,44 +56,51 @@ function flattenRoutes(
 ): FlatRouteMap {
     return Object.keys(routes).reduce((acc, path) => {
         const route = routes[path]
-        const flatRoute = {
-            name: route.name,
-            path:
-                parentPath === '/' && path.startsWith('/')
-                    ? path
-                    : parentPath + path,
-            componentChain: [...componentChain, route.component],
-            actionChain: [...actionChain, route.action],
+        let flatRoute
+
+        if (typeof route === 'string') {
+            flatRoutes[parentPath + path] = route
+        } else {
+            flatRoute = {
+                name: route.name,
+                path:
+                    parentPath === '/' && path.startsWith('/')
+                        ? path
+                        : parentPath + path,
+                componentChain: [...componentChain, route.component],
+                actionChain: [...actionChain, route.action],
+            }
+
+            if (!flatRoute.path.startsWith('/'))
+                throw new Error(
+                    `Route with name ${
+                        flatRoute.name
+                    } path does not start with slash.`,
+                )
+            if (namePool.includes(flatRoute.name))
+                throw new Error(
+                    `Route with name ${flatRoute.name} is already used.`,
+                )
+            if (pathPool.includes(flatRoute.path))
+                throw new Error(
+                    `Route with path ${flatRoute.path} is already used.`,
+                )
+
+            namePool.push(flatRoute.name)
+            pathPool.push(flatRoute.path)
+
+            flatRoutes[flatRoute.path] = flatRoute
+            if (route.subroutes)
+                return flattenRoutes(
+                    flatRoutes,
+                    namePool,
+                    pathPool,
+                    flatRoute.path,
+                    flatRoute.componentChain,
+                    flatRoute.actionChain,
+                    route.subroutes,
+                )
         }
-
-        if (!flatRoute.path.startsWith('/'))
-            throw new Error(
-                `Route with name ${
-                    flatRoute.name
-                } path does not start with slash.`,
-            )
-        if (namePool.includes(flatRoute.name))
-            throw new Error(
-                `Route with name ${flatRoute.name} is already used.`,
-            )
-        if (pathPool.includes(flatRoute.path))
-            throw new Error(
-                `Route with path ${flatRoute.path} is already used.`,
-            )
-
-        namePool.push(flatRoute.name)
-        pathPool.push(flatRoute.path)
-        flatRoutes[flatRoute.path] = flatRoute
-        if (route.subroutes)
-            return flattenRoutes(
-                flatRoutes,
-                namePool,
-                pathPool,
-                flatRoute.path,
-                flatRoute.componentChain,
-                flatRoute.actionChain,
-                route.subroutes,
-            )
         return flatRoutes
     }, {})
 }
@@ -103,6 +112,9 @@ function createNavigation(
 ): NavigateMap {
     return Object.keys(flatRoutes).reduce((acc, path) => {
         const route = flatRoutes[path]
+
+        // Don't generate navigation for redirects
+        if (typeof route === 'string') return acc
 
         acc[route.name] = (params?) => {
             browserHistory.push(urlMapper.stringify(path, params || {}), {})
@@ -128,6 +140,10 @@ function createRouteSetters(
     // Create Actions
     const actions = Object.keys(flatRoutes).reduce((acc, path) => {
         const route = flatRoutes[path]
+
+        // Don't process redirects
+        if (typeof route === 'string') return acc
+
         acc[route.name] = params => model => {
             const lastIndex = route.componentChain.length - 1
             if (route.actionChain[lastIndex]) {
@@ -198,6 +214,9 @@ function createLink(urlMapper, flatRoutes: FlatRouteMap): LinkMap {
     return Object.keys(flatRoutes).reduce((acc, path) => {
         const route = flatRoutes[path]
 
+        // Don't process redirects
+        if (typeof route === 'string') return acc
+
         acc[route.name] = (params = {}) => urlMapper.stringify(path, params)
 
         return acc
@@ -225,8 +244,12 @@ export function createRouter(
 
     if (layoutComponent) {
         Object.keys(flatRoutes).forEach(path => {
-            flatRoutes[path].componentChain.unshift(layoutComponent)
-            flatRoutes[path].actionChain.unshift(undefined)
+            const flatRoute = flatRoutes[path]
+            // Don't process redirects
+            if (typeof flatRoute === 'string') return
+
+            flatRoute.componentChain.unshift(layoutComponent)
+            flatRoute.actionChain.unshift(undefined)
         })
     }
 
@@ -239,13 +262,22 @@ export function createRouter(
         navigate,
         setRoute,
         link,
+        history: browserHistory,
         start: () => {
             browserHistory.listen((location, action) => {
                 const path = location.pathname + location.search
                 const matchedRoute = urlMapper.map(path, flatRoutes)
 
                 if (matchedRoute) {
-                    setRoute[matchedRoute.match.name](matchedRoute.values)
+                    if (typeof matchedRoute.match === 'string') {
+                        browserHistory.push(matchedRoute.match, {})
+                    } else {
+                        setRoute[matchedRoute.match.name](matchedRoute.values)
+                    }
+                } else {
+                    const wildCardRoute = flatRoutes['*']
+                    if (typeof wildCardRoute === 'string')
+                        browserHistory.push(wildCardRoute, {})
                 }
             })
         },

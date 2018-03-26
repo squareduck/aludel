@@ -25,10 +25,13 @@ test('createRoute flattens routes', t => {
                 },
             },
         },
+        '*': '/',
+        '/best-book': '/books/12',
         '/books': {
             name: 'Books',
             component,
             subroutes: {
+                '/best': '/books/12',
                 '/preview/:id': {
                     name: 'Preview',
                     component,
@@ -56,6 +59,9 @@ test('createRoute flattens routes', t => {
             componentChain: [component],
             actionChain: [undefined],
         },
+        '*': '/',
+        '/best-book': '/books/12',
+        '/books/best': '/books/12',
         '/about': {
             name: 'About',
             path: '/about',
@@ -89,6 +95,45 @@ test('createRoute flattens routes', t => {
     })
 })
 
+test.cb('Redirects and wildcard redirects work', t => {
+    const template = createTemplate({})
+    const component = createComponent(template, {})
+
+    let updateCount = 0
+    const expectedRoute = ['About', 'Help']
+    const context = createContext({}, state => {
+        t.is(expectedRoute[updateCount], state.$app.route.name)
+        updateCount += 1
+        if (updateCount === 2) t.end()
+    })
+
+    const routes: RouteMap = {
+        '*': '/help',
+        '/': {
+            name: 'Home',
+            component,
+            subroutes: {
+                '/about': {
+                    name: 'About',
+                    component,
+                },
+            },
+        },
+        '/help': {
+            name: 'Help',
+            component,
+        },
+        '/info': '/about',
+    }
+
+    const router = createRouter(context, routes)
+
+    router.start()
+
+    router.history.push('/info', {})
+    router.history.push('/doesnotexist', {})
+})
+
 test('Layout route is rendered first in component chain', t => {
     const layoutTemplate = createTemplate({
         render: ({ outlet }) => {
@@ -120,8 +165,8 @@ test('Layout route is rendered first in component chain', t => {
             name: 'Home',
             path: '/',
             componentChain: [layoutComponent, homeComponent],
-            actionChain: [undefined, undefined]
-        }
+            actionChain: [undefined, undefined],
+        },
     })
 
     router.navigate.Home()
