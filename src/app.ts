@@ -1,6 +1,6 @@
 import { createContext, Model } from './context'
 import { Component, Instance, createInstance } from './component'
-import { RouteMap, createRouter } from './router'
+import { RouteMap, createRouter, RouterConfig } from './router'
 
 /*
  * Create Aludel application.
@@ -29,20 +29,23 @@ export function createApp(
     render: (instance: Instance) => void,
 ): () => void {
     initialModel['$app'] = {
-        instance: () => {}
+        instance: () => {},
     }
 
     return () => {
-        const context = createContext(initialModel, (state) => {
+        const context = createContext(initialModel, state => {
             render(state['$app']['instance'])
         })
 
-        const actions = context.connectActions({instance: ['$app','instance']}, {
-            setInstance: (instance) => (model) => {
-                model.instance = instance
-                return model
-            }
-        })
+        const actions = context.connectActions(
+            { instance: ['$app', 'instance'] },
+            {
+                setInstance: instance => model => {
+                    model.instance = instance
+                    return model
+                },
+            },
+        )
 
         actions.setInstance(createInstance(context, topComponent))
     }
@@ -71,11 +74,6 @@ export function createApp(
  * - Navigate action changes browser state -> setRoute action is triggered
  *
  */
-export type RouterConfig = {
-    routes: RouteMap,
-    layoutComponent?: Component,
-}
-
 export function createRoutedApp(
     initialModel: Model,
     routerConfig: RouterConfig,
@@ -83,20 +81,19 @@ export function createRoutedApp(
 ): () => void {
     initialModel['$app'] = {
         instance: () => {},
-        route: {}
+        route: {},
     }
 
-
     return () => {
-        const context = createContext(initialModel, (state) => {
+        const context = createContext(initialModel, state => {
             render(state['$app']['instance'])
         })
 
-        const router = createRouter(context, routerConfig.routes, routerConfig.layoutComponent)
+        const router = createRouter(context, routerConfig)
         router.start()
 
         const root = router.flatRoutes['/']
         if (!root) throw new Error('Root route "/" was not found in routes.')
-        router.navigate[root.name]()
+        router.history.push('/')
     }
 }

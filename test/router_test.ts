@@ -51,7 +51,7 @@ test('createRoute flattens routes', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
     t.deepEqual(router.flatRoutes, {
         '/': {
             name: 'Home',
@@ -126,7 +126,7 @@ test.cb('Redirects and wildcard redirects work', t => {
         '/info': '/about',
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     router.start()
 
@@ -158,7 +158,7 @@ test('Layout route is rendered first in component chain', t => {
         },
     }
 
-    const router = createRouter(context, routes, layoutComponent)
+    const router = createRouter(context, { routes, layoutComponent })
 
     t.deepEqual(router.flatRoutes, {
         '/': {
@@ -183,7 +183,7 @@ test('createRouter throws if two flat routes have the same name or the same path
             '/about': { name: 'Home', component },
         }
 
-        createRouter(context, routes)
+        createRouter(context, { routes })
     })
 
     t.throws(() => {
@@ -201,7 +201,7 @@ test('createRouter throws if two flat routes have the same name or the same path
             },
         }
 
-        createRouter(context, routes)
+        createRouter(context, { routes })
     })
 })
 
@@ -216,7 +216,7 @@ test('createRouter throws if some route does not start with /', t => {
             about: { name: 'About', component },
         }
 
-        createRouter(context, routes)
+        createRouter(context, { routes })
     })
 })
 
@@ -275,7 +275,7 @@ test.cb('App state changes when setRoute is called', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     router.setRoute.Home()
     router.setRoute.User({ id: 12 })
@@ -314,7 +314,7 @@ test.cb('Route actions are executed in context of route component', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     router.setRoute.Home()
 })
@@ -351,7 +351,7 @@ test.cb('Navigate changes browser state and triggers setRoute', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     router.start()
 
@@ -383,7 +383,7 @@ test('Link generates correct links to routes', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     t.is(router.link.Home(), '/')
     t.is(router.link.User({ id: '15' }), '/users/15')
@@ -423,7 +423,7 @@ test.cb('Link and navigate are available in component render toolkit', t => {
         },
     }
 
-    const router = createRouter(context, routes)
+    const router = createRouter(context, { routes })
 
     router.start()
 

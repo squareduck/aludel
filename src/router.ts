@@ -10,12 +10,19 @@ import {
     ActionMap,
 } from './component'
 import { Context, ConnectedActionMap } from './context'
+import { layoutComponent } from '../demo/components/layout'
 
 export type NavigateMap = {
     [key: string]: (params?: { [key: string]: any }) => void
 }
 export type LinkMap = {
     [key: string]: (params?: { [key: string]: any }) => string
+}
+
+export type RouterConfig = {
+    routes: RouteMap
+    mountPoint?: string
+    layoutComponent?: Component
 }
 
 export type Router = {
@@ -230,18 +237,26 @@ function createLink(urlMapper, flatRoutes: FlatRouteMap): LinkMap {
  */
 export function createRouter(
     context: Context,
-    routes: RouteMap,
-    layoutComponent?: Component,
+    routerConfig: RouterConfig,
 ): Router {
     const urlMapper = Mapper({ query: true })
     // We need this check for Node compatibility
     const browserHistory =
         typeof window !== 'undefined'
-            ? createBrowserHistory()
-            : createMemoryHistory()
+            ? createBrowserHistory({ basename: routerConfig.mountPoint })
+            : createMemoryHistory({})
 
-    const flatRoutes = flattenRoutes({}, [], [], '', [], [], routes)
+    const flatRoutes = flattenRoutes(
+        {},
+        [],
+        [],
+        '',
+        [],
+        [],
+        routerConfig.routes,
+    )
 
+    const layoutComponent = routerConfig.layoutComponent
     if (layoutComponent) {
         Object.keys(flatRoutes).forEach(path => {
             const flatRoute = flatRoutes[path]
