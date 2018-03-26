@@ -12,21 +12,25 @@ import {
 import { Context, ConnectedActionMap } from './context'
 import { layoutComponent } from '../demo/components/layout'
 
+// A map of navigation functions (changes browser URL)
 export type NavigateMap = {
     [key: string]: (params?: { [key: string]: any }) => void
 }
+// A map of link creation functions (returns valid URL for giving route)
 export type LinkMap = {
     [key: string]: (params?: { [key: string]: any }) => string
 }
 
+// Router configuration
 export type RouterConfig = {
     routes: RouteMap
     mountPoint?: string
     layoutComponent?: Component
 }
 
+// Router object
 export type Router = {
-    flatRoutes: FlatRouteMap
+    flatRoutes: FlatRouteMap // Flattened routing tree
     navigate: NavigateMap // Functions that change Browser state (URL)
     setRoute: ConnectedActionMap // Actions that change App state ($app)
     link: LinkMap // Functions that return parametrized URL for route
@@ -34,6 +38,7 @@ export type Router = {
     start: () => void // Starts listening to browser history
 }
 
+// Initial route configuration with possible subroutes
 export type Route = {
     name: string
     component: Component
@@ -41,8 +46,10 @@ export type Route = {
     action?: Action
 }
 
+// Initial routing tree
 export type RouteMap = { [key: string]: Route | string }
 
+// Flattened route
 export type FlatRoute = {
     name: string
     path: string
@@ -50,8 +57,13 @@ export type FlatRoute = {
     actionChain: Action[]
 }
 
+// A map of flattened routes
 export type FlatRouteMap = { [key: string]: FlatRoute | string }
 
+/*
+ * Flattens routing tree by chaining paths, components and actions.
+ * 
+ */
 function flattenRoutes(
     flatRoutes: FlatRouteMap,
     namePool: string[],
@@ -112,6 +124,9 @@ function flattenRoutes(
     }, {})
 }
 
+/*
+ * Creates navigation functions for all flat routes.
+ */
 function createNavigation(
     urlMapper,
     browserHistory,
@@ -231,9 +246,13 @@ function createLink(urlMapper, flatRoutes: FlatRouteMap): LinkMap {
 }
 
 /*
+ * Creates the Router from given configuration.
+ * 
  * Flattens the routing tree.
- * Creates a navigation and route actions for each flat route.
- *
+ * Creates navigation, link creation and route switching actions for each flat route.
+ * Exposes history API
+ * Exposes start() function that begins browser history tracking
+ * 
  */
 export function createRouter(
     context: Context,
