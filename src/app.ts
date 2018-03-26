@@ -66,8 +66,8 @@ export function createApp(
  * We listen to browser state changes and call setRoute if URL matches one of
  * defined routes.
  *
- * Component instance chains are cached after first use. We can do that because
- * the only dynamic place in our app is global state.
+ * Component instances are cached after first creation. We can do that because
+ * the only dynamic place in our app is global state and component outlets.
  *
  * So changing route can happen in two paths:
  * - Browser state changed by user -> setRoute action is triggered

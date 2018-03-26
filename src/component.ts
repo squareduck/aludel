@@ -4,10 +4,7 @@ import { NavigateMap, LinkMap } from './router'
 
 export type Partial<T> = { [P in keyof T]?: T[P] }
 
-/*
- * Create template
- */
-
+// Component Template
 export type Template = {
     sockets: string[]
     actions: ActionMap
@@ -15,6 +12,7 @@ export type Template = {
     render: (tools: RenderTools) => any
 }
 
+// Object with useful tools available to every Template render function
 export type RenderTools = {
     model: Model
     action: ConnectedActionMap
@@ -25,9 +23,16 @@ export type RenderTools = {
     link: LinkMap
 }
 
+// Actions update Template's local model
 export type Action = (...args) => (model: Model) => Model
 export type ActionMap = { [key: string]: Action }
 
+/*
+ * Create template.
+ * 
+ * Puts default values for omitted fields. 
+ * 
+ */
 export function createTemplate(config: Partial<Template>): Template {
     return Object.assign(
         {
@@ -40,20 +45,33 @@ export function createTemplate(config: Partial<Template>): Template {
     )
 }
 
-/*
- * Create component
- */
-
+// A map of paths into Global State for each socket
 export type PathMap = { [key: string]: (string | number)[] }
 
+// Component
 export type Component = {
     signature: string
     template: Template
     paths: PathMap
 }
 
+// A map of components where each component is associated with some name
 export type ComponentMap = { [key: string]: Component }
 
+/*
+ * Create Component
+ * 
+ * Specify path into Global State for each socket.
+ * Doing this step separately allows us to create many components 
+ * from one template by changing socket paths.
+ * 
+ * Validates that all sockets got a path.
+ * 
+ * Also calculates unique Component signature. Two identical components
+ * will have the same signature. This allows us to cache component
+ * instances.
+ * 
+ */
 export function createComponent(template: Template, paths: PathMap): Component {
     // Check that we have same amount of paths and sockets
     const equalAmount = Object.keys(paths).length === template.sockets.length
@@ -78,19 +96,26 @@ export function createComponent(template: Template, paths: PathMap): Component {
     }
 }
 
-/*
- * Create instance
- *
- * This is just convenience function. We delegate actual creation to Context.
- */
-
+// Component Instance that will render the "view" if invoked
+// props - local parameters passed from parent component
+// outlet - possible child component from next section of the routing hierarchy
 export type Instance = (props?: Model, outlet?: Instance) => any
+// A map of instances
 export type InstanceMap = { [key: string]: Instance }
+// Tools useful in creating new instances
+// navigate - a map of functions that change browser URL according to named routes
+// link - a map of functions that produce a valid URL from named route and params
 export type InstanceTools = {
     navigate?: NavigateMap
     link?: LinkMap
 }
 
+/*
+ * Create instance
+ *
+ * This is just convenience function. We delegate actual creation to Context.
+ * 
+ */
 export function createInstance(
     context: Context,
     component: Component,
