@@ -80,61 +80,24 @@ export function createComponent(template: Template, paths: PathMap): Component {
 
 /*
  * Create instance
+ *
+ * This is just convenience function. We delegate actual creation to Context.
  */
 
 export type Instance = (props?: Model, outlet?: Instance) => any
 export type InstanceMap = { [key: string]: Instance }
+export type InstanceTools = {
+    navigate?: NavigateMap
+    link?: LinkMap
+}
 
 export function createInstance(
     context: Context,
     component: Component,
-    tools: {
-        navigate: NavigateMap
-        link: LinkMap
-    } = {
+    tools: InstanceTools = {
         navigate: {},
         link: {},
     },
 ): Instance {
-    context.addDependency(component)
-
-    const child = Object.keys(component.template.children).reduce(
-        (acc, name) => {
-            acc[name] = createInstance(
-                context,
-                component.template.children[name],
-            )
-            return acc
-        },
-        {},
-    )
-
-    const action = context.connectActions(
-        component.paths,
-        component.template.actions,
-        component.signature,
-    )
-
-    if (action.$init)
-        action.$init()
-
-    return (props: Model = {}, outlet: Instance = () => {}) => {
-        if (context.shouldRender(component.signature)) {
-            const model = context.localModel(component.paths)
-            const rendering = component.template.render({
-                model,
-                action,
-                child,
-                props,
-                outlet,
-                navigate: tools.navigate,
-                link: tools.link,
-            })
-
-            context.addCachedRender(component.signature, rendering)
-            return rendering
-        } else {
-            return context.cachedRenderFor(component.signature)
-        }
-    }
+    return context.createInstance(component, tools)
 }

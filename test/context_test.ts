@@ -116,63 +116,6 @@ test.cb('Each global state change triggers onUpdate()', t => {
     actions.setName('Cid')
 })
 
-test('Context calculates dependencies between components', t => {
-    const context = createContext({})
-
-    const homeTemplate = createTemplate({
-        sockets: ['userList', 'bookList'],
-    })
-    const homeComponent = createComponent(homeTemplate, {
-        userList: ['data', 'users', 'list'],
-        bookList: ['data', 'books', 'list'],
-    })
-
-    const homeInstance = createInstance(context, homeComponent)
-
-    t.is(undefined, context.dependenciesFor('no such signature'))
-    t.deepEqual([], context.dependenciesFor(homeComponent.signature))
-
-    const userTemplate = createTemplate({
-        sockets: ['users'],
-    })
-    const userComponent = createComponent(userTemplate, {
-        users: ['data', 'users'],
-    })
-
-    const userInstance = createInstance(context, userComponent)
-
-    t.deepEqual(
-        [userComponent.signature],
-        context.dependenciesFor(homeComponent.signature),
-    )
-    t.deepEqual(
-        [homeComponent.signature],
-        context.dependenciesFor(userComponent.signature),
-    )
-
-    const bookTemplate = createTemplate({
-        sockets: ['books'],
-    })
-    const bookComponent = createComponent(bookTemplate, {
-        books: ['data', 'books'],
-    })
-
-    const bookInstance = createInstance(context, bookComponent)
-
-    t.deepEqual(
-        [userComponent.signature, bookComponent.signature],
-        context.dependenciesFor(homeComponent.signature),
-    )
-    t.deepEqual(
-        [homeComponent.signature],
-        context.dependenciesFor(userComponent.signature),
-    )
-    t.deepEqual(
-        [homeComponent.signature],
-        context.dependenciesFor(bookComponent.signature),
-    )
-})
-
 test.cb('Doesnt calculate render function if deps didnt change', t => {
     let homeRenders = 0
     let userRenders = 0
@@ -189,25 +132,16 @@ test.cb('Doesnt calculate render function if deps didnt change', t => {
         bookInstance()
         renderCount += 1
         if (renderCount === 1) {
-            t.is(true, context.shouldRender(homeComponent.signature))
-            t.is(true, context.shouldRender(userComponent.signature))
-            t.is(true, context.shouldRender(bookComponent.signature))
             t.is(homeRenders, 2)
             t.is(userRenders, 2)
             t.is(bookRenders, 2)
         }
         if (renderCount === 2) {
-            t.is(true, context.shouldRender(homeComponent.signature))
-            t.is(true, context.shouldRender(userComponent.signature))
-            t.is(false, context.shouldRender(bookComponent.signature))
             t.is(homeRenders, 3)
             t.is(userRenders, 3)
             t.is(bookRenders, 2)
         }
         if (renderCount === 3) {
-            t.is(true, context.shouldRender(homeComponent.signature))
-            t.is(false, context.shouldRender(userComponent.signature))
-            t.is(true, context.shouldRender(bookComponent.signature))
             t.is(homeRenders, 4)
             t.is(userRenders, 3)
             t.is(bookRenders, 3)

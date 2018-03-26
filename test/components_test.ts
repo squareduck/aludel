@@ -171,19 +171,18 @@ test.cb('Components have access to per-component local state', t => {
     let connectedAction
     const template = createTemplate({
         actions: {
-            setMessage: (message) => (model) => {
+            setMessage: message => model => {
                 model.$local = message
                 return model
-            }
+            },
         },
-        render: ({model, action}) => {
+        render: ({ model, action }) => {
             connectedAction = action.setMessage
             return model.$local
-        }
+        },
     })
 
-    const component = createComponent(template, {
-    })
+    const component = createComponent(template, {})
 
     const context = createContext({}, state => {
         t.is('Hello', state.$local[component.signature])
@@ -202,18 +201,18 @@ test.cb('Component triggers $init action on instantiation', t => {
     const template = createTemplate({
         sockets: ['counter'],
         actions: {
-            $init: () => (model) => {
+            $init: () => model => {
                 model.counter = 21
                 return model
-            }
+            },
         },
-        render: ({model}) => {
+        render: ({ model }) => {
             return model.counter
-        }
+        },
     })
 
     const component = createComponent(template, {
-        counter: ['data', 'counter']
+        counter: ['data', 'counter'],
     })
 
     const context = createContext({}, state => {
@@ -223,6 +222,32 @@ test.cb('Component triggers $init action on instantiation', t => {
     })
 
     const instance = createInstance(context, component)
+})
+
+test.cb('Component instances are cached and created only once', t => {
+    let initCount = 0
+    const template = createTemplate({
+        actions: {
+            $init: () => model => {
+                initCount += 1
+                if (initCount > 1)
+                    t.fail('Init action should be called only once.')
+                return model
+            },
+        },
+        render: () => {
+            t.end()
+        },
+    })
+
+    const component = createComponent(template, {})
+
+    const context = createContext({})
+
+    const firstInstance = createInstance(context, component)
+    const secondInstance = createInstance(context, component)
+
+    setTimeout(firstInstance)
 })
 
 test('Components can declare child components and pass props to them', t => {

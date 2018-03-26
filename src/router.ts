@@ -162,6 +162,16 @@ function createRouteSetters(
     )
 }
 
+/*
+ * Create a chain of instances where each next instance is put in an outlet of
+ * current instance.
+ *
+ * Last instance gets an empty outlet.
+ *
+ * createInstance will reuse cached instances when possible, so this operation
+ * should be fast.
+ *
+ */
 function instantiateChain(
     context: Context,
     chain: Component[],

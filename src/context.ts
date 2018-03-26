@@ -1,7 +1,14 @@
 import get from 'lodash.get'
 import set from 'lodash.set'
 import produce from 'immer'
-import { Action, ActionMap, PathMap, Component, Instance } from './component'
+import {
+    Action,
+    ActionMap,
+    PathMap,
+    Component,
+    Instance,
+    InstanceTools,
+} from './component'
 
 export type Model = { [key: string]: any }
 
@@ -67,6 +74,85 @@ function connectActions(
 }
 
 /*
+ * Create Component Instance.
+ *
+ * Also does some bookkeeping:
+ * - Registers component in context
+ * - Updates all component dependencies
+ * - Caches the new Instance
+ * - When instance is rendered, caches the rendering value
+ *
+ */
+function createInstance(
+    state: Model,
+    contextState: ContextState,
+    component: Component,
+    tools: InstanceTools,
+    onUpdate: StateUpdateFn,
+): Instance {
+    // If instance is already cached we don't need to recalculate anything
+    const cachedInstance = cachedInstanceFor(contextState.registry, component.signature)
+    if (cachedInstance) return cachedInstance
+
+    // Otherwise create a new instance and cache it
+    //
+    addDependency(contextState.registry, component)
+
+    const child = Object.keys(component.template.children).reduce(
+        (acc, name) => {
+            acc[name] = createInstance(
+                state,
+                contextState,
+                component.template.children[name],
+                tools,
+                onUpdate,
+            )
+            return acc
+        },
+        {},
+    )
+
+    const action = connectActions(
+        state,
+        contextState,
+        component.paths,
+        component.template.actions,
+        onUpdate,
+        component.signature,
+    )
+
+    if (action.$init) action.$init()
+
+    const instance = (props: Model = {}, outlet: Instance = () => {}) => {
+        if (shouldRender(contextState, component.signature)) {
+            const model = localModel(state, component.paths)
+            const rendering = component.template.render({
+                model,
+                action,
+                child,
+                props,
+                outlet,
+                navigate: tools.navigate,
+                link: tools.link,
+            })
+
+            addCachedRender(
+                contextState.registry,
+                component.signature,
+                rendering,
+            )
+            return rendering
+        } else {
+            return cachedRenderFor(contextState.registry, component.signature)
+        }
+    }
+
+    addCachedInstance(contextState.registry, component.signature, instance)
+
+    return instance
+}
+
+/*
  * Check if two components have any paths that match.
  *
  * For example:
@@ -114,6 +200,7 @@ export type ComponentRegistry = {
         component: Component
         dependencies: string[]
         cachedRender?: any
+        cachedInstance?: Instance
     }
 }
 
@@ -158,16 +245,32 @@ function addCachedRender(
     registry: ComponentRegistry,
     signature: string,
     rendering: any,
-): string[] {
+) {
     if (registry[signature])
-        return (registry[signature].cachedRender = rendering)
+        registry[signature].cachedRender = rendering
 }
 
 function cachedRenderFor(
     registry: ComponentRegistry,
     signature: string,
-): string[] {
+): any {
     if (registry[signature]) return registry[signature].cachedRender
+}
+
+function addCachedInstance(
+    registry: ComponentRegistry,
+    signature: string,
+    instance: Instance,
+) {
+    if (registry[signature])
+        registry[signature].cachedInstance = instance
+}
+
+function cachedInstanceFor(
+    registry: ComponentRegistry,
+    signature: string,
+): Instance {
+    if (registry[signature]) return registry[signature].cachedInstance
 }
 
 /*
@@ -217,11 +320,7 @@ export type Context = {
         actions: ActionMap,
         signature?: string,
     ) => ConnectedActionMap
-    shouldRender: (signature: string) => boolean
-    addDependency: (component: Component) => void
-    dependenciesFor: (signature: string) => string[]
-    addCachedRender: (signature: string, rendering: any) => void
-    cachedRenderFor: (signature: string) => any
+    createInstance: (component: Component, tools: InstanceTools) => Instance
 }
 
 /*
@@ -262,15 +361,7 @@ export function createContext(
                 onUpdate,
                 signature,
             ),
-        shouldRender: (signature: string) =>
-            shouldRender(contextState, signature),
-        addDependency: (component: Component) =>
-            addDependency(contextState.registry, component),
-        dependenciesFor: (signature: string) =>
-            dependenciesFor(contextState.registry, signature),
-        addCachedRender: (signature: string, rendering: any) =>
-            addCachedRender(contextState.registry, signature, rendering),
-        cachedRenderFor: (signature: string) =>
-            cachedRenderFor(contextState.registry, signature),
+        createInstance: (component: Component, tools: InstanceTools) =>
+            createInstance(state, contextState, component, tools, onUpdate),
     }
 }
