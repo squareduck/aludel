@@ -7,7 +7,7 @@ import {
     RouteMap,
 } from '../src/index'
 
-test('createRoute flattens routes', t => {
+test('createRouter() flattens routes', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
     const context = createContext({})
@@ -95,7 +95,7 @@ test('createRoute flattens routes', t => {
     })
 })
 
-test.cb('Redirects and wildcard redirects work', t => {
+test.cb('Router reacts to wildcard route and redirects', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
 
@@ -134,10 +134,10 @@ test.cb('Redirects and wildcard redirects work', t => {
     router.history.push('/doesnotexist', {})
 })
 
-test('Layout route is rendered first in component chain', t => {
+test.cb('Router inserts layoutComponent into each component chain', t => {
     const layoutTemplate = createTemplate({
         render: ({ outlet }) => {
-            return `Layout ${outlet}`
+            return `Layout ${outlet()}`
         },
     })
     const layoutComponent = createComponent(layoutTemplate, {})
@@ -148,7 +148,8 @@ test('Layout route is rendered first in component chain', t => {
     const homeComponent = createComponent(homeTemplate, {})
 
     const context = createContext({}, state => {
-        console.log(state.$app.instance)
+        t.is('Layout Home', state.$app.instance())
+        t.end()
     })
 
     const routes = {
@@ -159,6 +160,8 @@ test('Layout route is rendered first in component chain', t => {
     }
 
     const router = createRouter(context, { routes, layoutComponent })
+
+    router.start()
 
     t.deepEqual(router.flatRoutes, {
         '/': {
@@ -172,7 +175,7 @@ test('Layout route is rendered first in component chain', t => {
     router.navigate.Home()
 })
 
-test('createRouter throws if two flat routes have the same name or the same path', t => {
+test('createRouter() throws if two flat routes have the same name or the same path', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
     const context = createContext({})
@@ -205,7 +208,7 @@ test('createRouter throws if two flat routes have the same name or the same path
     })
 })
 
-test('createRouter throws if some route does not start with /', t => {
+test('createRouter() throws if some route does not start with /', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
     const context = createContext({})
@@ -220,7 +223,7 @@ test('createRouter throws if some route does not start with /', t => {
     })
 })
 
-test.cb('App state changes when setRoute is called', t => {
+test.cb('router.setRoute() changes Global State', t => {
     const homeTemplate = createTemplate({
         render: () => 'Home',
     })
@@ -294,13 +297,12 @@ test.cb('Route actions are executed in context of route component', t => {
 
     let renderCount = 0
     const context = createContext({ counter: 0 }, state => {
-        if (renderCount === 1)
-            // On second render we should have instance
-            t.is(50, state.$app.instance())
-        t.is(50, state.counter)
         renderCount += 1
-        // Expect to have 2 renders total
-        renderCount === 2 && t.end()
+        t.is(50, state.counter)
+        if (renderCount === 2) {
+            t.is(50, state.$app.instance())
+            t.end()
+        }
     })
 
     const routes = {
@@ -319,7 +321,7 @@ test.cb('Route actions are executed in context of route component', t => {
     router.setRoute.Home()
 })
 
-test.cb('Navigate changes browser state and triggers setRoute', t => {
+test.cb('router.navigate() sets browser URL and triggers setRoute()', t => {
     const template = createTemplate({
         sockets: ['counter'],
         render: ({ model }) => model.counter,
@@ -331,13 +333,12 @@ test.cb('Navigate changes browser state and triggers setRoute', t => {
 
     let renderCount = 0
     const context = createContext({ counter: 0 }, state => {
-        if (renderCount === 1)
-            // On second render we should have instance
-            t.is(50, state.$app.instance())
-        t.is(50, state.counter)
         renderCount += 1
-        // Expect to have 2 renders total
-        renderCount === 2 && t.end()
+        t.is(50, state.counter)
+        if (renderCount === 2) {
+            t.is(50, state.$app.instance())
+            t.end()
+        }
     })
 
     const routes = {
@@ -358,7 +359,7 @@ test.cb('Navigate changes browser state and triggers setRoute', t => {
     router.navigate.Home()
 })
 
-test('Link generates correct links to routes', t => {
+test('router.link() generates correct URL to named route', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
     const context = createContext({})
@@ -400,7 +401,7 @@ test('Link generates correct links to routes', t => {
     )
 })
 
-test.cb('Link and navigate are available in component render toolkit', t => {
+test.cb('router.link() and router.navigate() are in template.render()', t => {
     const template = createTemplate({
         render: ({ navigate, link }) => {
             t.is(typeof navigate.Home, 'function')
