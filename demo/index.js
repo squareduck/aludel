@@ -5,6 +5,7 @@ import { homeComponent } from './components/home'
 import { aboutComponent } from './components/about'
 
 const routes = {
+    '*': '/',
     '/': {
         name: 'Home',
         component: homeComponent,
@@ -12,12 +13,16 @@ const routes = {
     '/about': {
         name: 'About',
         component: aboutComponent,
-    }
+    },
 }
 
-const app = createRoutedApp({}, {routes, layoutComponent}, instance => {
-    const rootElement = document.querySelector('.app')
-    rootElement && patch(instance(), rootElement)
-})
+const app = createRoutedApp(
+    {},
+    { routes, layoutComponent, mountPoint: '/aludel' },
+    instance => {
+        const rootElement = document.querySelector('.app')
+        rootElement && patch(instance(), rootElement)
+    },
+)
 
 app()
