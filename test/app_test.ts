@@ -6,6 +6,7 @@ import {
     createApp,
     createRoutedApp,
 } from '../src/index'
+import { homeComponent } from '../demo/components/home'
 
 test.cb('Single component app renders on global state updates', t => {
     let setName
@@ -46,6 +47,47 @@ test.cb('Single component app renders on global state updates', t => {
     })
 })
 
+test.cb('Can replace $app.instance dynamically from actions', t => {
+    const userTemplate = createTemplate({
+        render: () => 'User',
+    })
+    const userComponent = createComponent(userTemplate, {})
+
+    let connectedAction
+    const homeTemplate = createTemplate({
+        sockets: ['topInstance'],
+        actions: {
+            replaceInstance: instance => model => {
+                model.topInstance = instance
+                return model
+            },
+        },
+        render: ({ model, action, create }) => {
+            const userInstance = create(userComponent)
+            connectedAction = () => action.replaceInstance(userInstance)
+            return 'Home'
+        },
+    })
+    const homeComponent = createComponent(homeTemplate, {
+        topInstance: ['$app', 'instance'],
+    })
+
+    let renderCount = 0
+    const app = createApp({}, homeComponent, instance => {
+        renderCount += 1
+        if (renderCount === 1) {
+            t.is('Home', instance())
+            connectedAction()
+        }
+        if (renderCount === 2) {
+            t.is('User', instance())
+            t.end()
+        }
+    })
+
+    app()
+})
+
 // Home route finding and handling of error when '/' is not defined
 test.cb('Routed app renders the root route', t => {
     const homeTemplate = createTemplate({
@@ -67,11 +109,10 @@ test.cb('Routed app renders the root route', t => {
             name: 'User',
             component: userComponent,
         },
-
     }
 
     t.throws(() => {
-        const badApp = createRoutedApp({}, {routes: badRoutes}, () => {})
+        const badApp = createRoutedApp({}, { routes: badRoutes }, () => {})
         badApp()
     })
 
@@ -86,7 +127,7 @@ test.cb('Routed app renders the root route', t => {
         },
     }
 
-    const app = createRoutedApp({}, {routes}, instance => {
+    const app = createRoutedApp({}, { routes }, instance => {
         t.is('Home', instance())
         t.end()
     })

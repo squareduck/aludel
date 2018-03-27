@@ -10,6 +10,7 @@ import {
     InstanceTools,
 } from './component'
 
+// Data storage
 export type Model = { [key: string]: any }
 
 /*
@@ -43,6 +44,11 @@ function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
     }, state)
 }
 
+// Action wired to Context
+export type ConnectedAction = (...args) => void
+// A map of named Connected Actions
+export type ConnectedActionMap = { [key: string]: ConnectedAction }
+
 /*
  * Connect Actions to Context.
  *
@@ -65,12 +71,6 @@ function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
  * Returns a map of Connected Actions that mirrors input Actions Map.
  *
  */
-
-// Action wired to Context
-export type ConnectedAction = (...args) => void
-// A map of named Connected Actions
-export type ConnectedActionMap = { [key: string]: ConnectedAction }
-
 function connectActions(
     state: Model,
     contextState: ContextState,
@@ -155,6 +155,14 @@ function createInstance(
                 action,
                 child,
                 props,
+                create: (component: Component) =>
+                    createInstance(
+                        state,
+                        contextState,
+                        component,
+                        tools,
+                        onUpdate,
+                    ),
                 outlet,
                 navigate: tools.navigate,
                 link: tools.link,

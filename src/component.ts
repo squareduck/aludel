@@ -18,6 +18,7 @@ export type RenderTools = {
     action: ConnectedActionMap
     child: InstanceMap
     props: Model
+    create: (component: Component) => Instance
     outlet: Instance
     navigate: NavigateMap
     link: LinkMap
