@@ -156,6 +156,100 @@ const app = createApp({}, homeComponent, instance => {
 })
                 `),
                 h1('Routing'),
+                p(
+                    'Aludel provides createRoutedApp function for routed components. You describe routing tree with each node being either a redirect or a named route with attached Component.',
+                ),
+                p(
+                    'Routers can be created manually with createRouter function. Use it if you want to customize application behavior.',
+                ),
+                h2('Routing is state'),
+                p(
+                    'When router is started Aludel starts listening to browser location changes and triggering Routing Actions if current URL matches one of the routes. Routing Action changes Global State field $app, and specifically sets $app.instance to instance of route Component, and populates $app.route object with details about current route.',
+                ),
+                p(
+                    'In routed application Instances will have access to "navigate" and "link" functions. Navigate allows us to change the browser URL, and Link returns URL of named route.',
+                ),
+                h2('Defining routes'),
+                p(
+                    'Both createRouter() and createRoutedApp() take in RouterConfig object which defines "routes" - routing tree, "mountPoint" - prefix to all routed URLs, "layoutComponent " - top component in any routed Component chain.',
+                ),
+                p('Redirecting unmatched routes is defined with "*" route.'),
+                p(
+                    'Components have access to "outlet" in their render function. It will contain the next Instance in routed Component chain. That means - if we have a route with homeComponent and subroute with userComponent, then instances of homeComponent will contain an instance of userComponent in its outlet.',
+                ),
+                p(
+                    'Routes can contain an Action. It will recieve route parameters and is executed in context of route Component. This Action will be triggered every time the route is visited.',
+                ),
+                p(
+                    'In example below we create a Router. Same configuration can be applied to createRoutedApp().',
+                ),
+                code(`
+const layoutTemplate = createTemplate({
+    render: ({outlet}) => {
+        return h('div', {}, {
+            h('h1', {}, 'Layout'),
+            outlet()
+        })
+    }
+})
+const layoutComponent = createComponent(layoutTemplate, {})
+
+const homeTemplate = createTemplate({
+    render: ({outlet, link}) => {
+        return h('div', {}, [
+            h('h1', {}, 'Home'),
+            h('a', {href: link.User({id: 12})}, 'Go to 12th User'),
+            outlet()
+        ])
+    }
+})
+const homeComponent = createComponent(homeTemplate, {})
+
+const userTemplate = createTemplate({
+    sockets: ['userId'],
+    render: ({model, navigate}) => {
+        return h('div', {}, [
+            h('h3', {}, 'User' + model.userId),
+            h('button', {onclick: () => navigate.Home()}, 'Go Home')
+        ])
+    }
+})
+const userComponent = createComponent(userTemplate, {
+    userId: ['user', 'id']
+})
+
+const routes = {
+    '*': '/home',
+    '/user': '/home/user',
+    '/home': {
+        name: 'Home',
+        component: homeComponent,
+        subroutes: {
+            '/user/:id': {
+                name: 'User',
+                component: userComponent,
+                action: ({id}) => model => {
+                    model.userId = id
+                    return model
+                }
+            }
+        }
+    }
+}
+
+const context = createContext({}, state => {
+    // Will be called on every Action
+})
+
+const router = createRouter(context, {
+    routes: routes,
+    mountPoint: '/aludelapp',
+    layoutComponent: layoutComponent,
+})
+
+router.start()
+                `),
+                h('br'),
             ]),
         ])
     },

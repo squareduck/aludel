@@ -306,11 +306,11 @@ test.cb('Route actions are executed in context of route component', t => {
     })
 
     const routes = {
-        '/': {
-            name: 'Home',
+        '/increment/:amount': {
+            name: 'Increment',
             component: component,
-            action: () => model => {
-                model.counter += 50
+            action: ({ amount }) => model => {
+                model.counter += amount
                 return model
             },
         },
@@ -318,7 +318,7 @@ test.cb('Route actions are executed in context of route component', t => {
 
     const router = createRouter(context, { routes })
 
-    router.setRoute.Home()
+    router.setRoute.Increment({ amount: 50 })
 })
 
 test.cb('router.navigate() sets browser URL and triggers setRoute()', t => {

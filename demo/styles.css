@@ -37,7 +37,7 @@ code {
     white-space: pre-wrap;
     white-space: -moz-pre-wrap;
     white-space: -o-pre-wrap;
-    background: #F3FAFF;
+    background: #f3faff;
     display: block;
     padding: 0.5em 1em;
     border: 1px solid #bebab0;
@@ -99,7 +99,11 @@ code {
     margin-bottom: 20px;
 }
 
-.home h1, .home h2, .home h3, .home h4, .home h5 {
+.home h1,
+.home h2,
+.home h3,
+.home h4,
+.home h5 {
     margin-left: auto;
     margin-right: auto;
     color: #fff;

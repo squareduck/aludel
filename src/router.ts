@@ -175,7 +175,7 @@ function createRouteSetters(
                         action: route.actionChain[lastIndex],
                     },
                 )
-                routeAction.action()
+                routeAction.action(params)
             }
             model.route = {
                 name: route.name,
