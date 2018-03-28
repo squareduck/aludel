@@ -152,9 +152,20 @@ As with Components above, different Instances can be created from the same Compo
 
 ### Context
 
-#### Global State
+Context connects components to Global State. It creates _Connected Actions_ from _Actions_, manages caching of Component Instances and Render function results. It also exposes a callback function that will be called every time a _Connected Action_ is finished.
 
-#### Reacting to changes
+```javascript
+const initialState = {
+    data: {
+        counter: 0,
+    },
+}
+const context = createContext(initialState, state => {
+    // Will be called after any Connected Action.
+})
+```
+
+Context is a glue that creates dynamic behavior (Instances) from static configuration (Templates and Components)
 
 ### Router
 
