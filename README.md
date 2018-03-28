@@ -30,7 +30,7 @@ Components in Aludel have three stages - Template, Component, Instance. Each nex
 
 #### Template
 
-Template describes _Sockets_, _Actions_, _Children_, and _Render function_.
+Template describes _Sockets_, _Actions_, _Children_, and _Render function_. Any fields can be omitted and will be replaced by default (empty) values.
 
 ```javascript
 const template = createTemplate({
@@ -69,6 +69,8 @@ An action must return the new version of Local Model. This new version will get 
 
 Actions can return a Promise of Local Model. In fact every action is treated asynchronously for consistency (using `Promise.resolve()`).
 
+Actions can also return a partial version of Local Model, by omitting some top fields. Aludel will not touch corresponding values in Global State during synchronization.
+
 ##### Children
 
 Children object is a map of components that will be instantiated first, and passed to render function.
@@ -90,7 +92,40 @@ Render function will recieve an object with many useful tools:
 
 #### Component
 
+A proper Component is created by combining Template and a map of paths.
+
 ##### Paths
+
+Paths define a path into some area of Global State for each _Socket_.
+
+```javascript
+// We reuse 'template' from previous code snippet
+// Remember that we had:
+//     sockets: ['counter']
+const component = createComponent(template, {
+    counter: ['data', 'counter'],
+})
+```
+
+In example above we combine template from previous code snippet and a map of paths for each socket. Each socket must be covered by a path, otherwise Aludel will throw an error.
+
+Let's suppose that we had a Global State looking like this:
+
+```javascript
+{
+    data: {
+        counter: 0
+    }
+}
+```
+
+The component above just defined that its `counter` socket leads to `GlobalState.data.counter`. So for each Instance of this component, Local Model will be derived from that particular place in Global State.
+
+By default Aludel uses Lodash [get](https://lodash.com/docs#get) and [set](https://lodash.com/docs#set), so non-existing paths will be automatically created when deriving Local Model or synchronizing it back into Global State.
+
+##### Signature
+
+When component is created, it also calculates it's _Signature_. A signature is just a SHA-1 hash of Template plus Paths. It is used to uniquely identify Components and cache them efficiently.
 
 #### Instance
 
