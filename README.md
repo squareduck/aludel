@@ -127,7 +127,28 @@ By default Aludel uses Lodash [get](https://lodash.com/docs#get) and [set](https
 
 When component is created, it also calculates it's _Signature_. A signature is just a SHA-1 hash of Template plus Paths. It is used to uniquely identify Components and cache them efficiently.
 
+##### Same Template, different Components
+
+By varying paths we can create different components that reuse the same Template, but have a different Local Model derived from their own paths.
+
 #### Instance
+
+Template and Component are just data. They are configuration objects and they describe how Local Model behaves and looks like, and how to derive it. What they lack is a Context.
+
+The code in this section is optional. If you want to manage Instances manually, it is required. If you opt in to use Aludel's App or RoutedApp, then Context and Instance management will be done automatically behind the scenes.
+
+Component Instances are functions created by applying Component configuration to a particular Context (read more about Context in the next section).
+
+Instances return the result of Template's render function executed in given Context.
+
+```javascript
+// We reuse 'component' from previous code snippet
+const context = createContext({})
+const instance = createInstance(contex, component)
+instance() // returns virtual nodes from Template's render function.
+```
+
+As with Components above, different Instances can be created from the same Component by applying it to different Contexts.
 
 ### Context
 
