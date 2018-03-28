@@ -26,9 +26,36 @@ Any Virtual DOM library should work with Aludel. It exposes a callback that will
 
 ### Components
 
+Components in Aludel have three stages - Template, Component, Instance. Each next stage is a more specialized version of previous one.
+
 #### Template
 
+Template describes _Sockets_, _Actions_, and _Render function_.
+
+```javascript
+const template = createTemplate({
+    sockets: ['counter'],
+    actions: {
+        add: amount => model => {
+            model.counter += amount
+            return model
+        },
+    },
+    render: ({ model }) => {
+        return h('div', {}, [
+            h('button', { onclick: () => action.add(-1) }, 'Decrement'),
+            h('div', {}, model.counter),
+            h('button', { onclick: () => action.add(1) }, 'Increment'),
+        ])
+    },
+})
+```
+
 ##### Sockets
+
+Sockets describe top fields of Local Model that will be constructed for Component Instance. In example above we have one socket `'counter'`. We don't know yet which part of Global State this socket will map to. But our Local Model, available in _Actions_ and _Render function_ will have a `'counter'` field for sure.
+
+There is an implicit contract here in how this field is used. For example in code above we expect `'counter'` to be a number.
 
 ##### Actions
 
