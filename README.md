@@ -169,15 +169,93 @@ Context is a glue that creates dynamic behavior (Instances) from static configur
 
 ### Router
 
+Routing management in Aludel is optional. If you want to use it, just create a _Router_ on the same Context that is used for your Components.
+
+```javascript
+const context = createContext({})
+const config = {
+    routes: {
+        '/': {
+            name: 'Home',
+            component: homeComponent,
+        },
+    },
+}
+const router = createRouter(context, config)
+router.start()
+```
+
+Creating router results in a Router object with useful fields:
+
+*   navigate - A map of functions that puts Route URL in the browser location
+*   link - A map of functions that return a string URL to named Route
+*   setRoute - A map of actions that set $app.route and $app.instance fields in Global State
+*   start - A function that starts browser history tracking
+
 #### Defining routes
+
+Routes are described by a tree of objects. Let's look at example first:
+
+```javascript
+const routes = {
+    '*': '/',
+    '/profile': '/settings/profile',
+    '/': {
+        name: 'Home',
+        component: homeComponent,
+    },
+    '/settings': {
+        name: 'Settings'
+        component: settingsComponent,
+        subroutes: {
+            '/profile': {
+                name: 'ProfileSettings',
+                component: profileComponent,
+            },
+        }
+    },
+    '/users/:id': {
+        name: 'User',
+        component: userComponent,
+        action: (params) => (model) => {
+            model.currentUserId = params.id
+        }
+    }
+}
+```
+
+Above we describe how components map onto different URLs, and optionally execute an action when Route is visited.
+
+If route value is a string, it is handled as a redirect. We also have a special `*` route called "Wildcard route" to handle all unspecified routes.
+
+Each non-redirect route must have a name. This name will be used in creation of routing related functions in `navigate`, `link` and `setRoute`.
 
 ##### Route component
 
+In addition to name, each non-redirect route must have a `component` key. The Component in that field will be instantiated and passed as `outlet` to the Instance of parent route Component.
+
 ##### Route action
+
+Optionally, you can specify an `action` field. It specifies an Action in the same way that you would do it in Template, but only one Action is allowed.
+
+This Action will execute as if it was part of route's Component. It will have the same Local Model. The argument of the outer function will be an object containing all named parameters of the route.
+
+Route Action will always execute before Component's own actions.
 
 ##### Subroutes
 
+Optionally, you can specify `subroutes` field. It describes nested subroutes (see example above). When Router is created, routing tree gets flattened, so all nested subroutes collapse into full URLs. And all Components and Actions are flattened into chains.
+
 #### Additional configuration
+
+Router configuration also takes in:
+
+*   mountPoint - a prefix to all route URLs.
+*   layoutComponent - a Component to be placed at the front of all Component chains.
+
+#### Starting router
+
+Created Router exposes a `start()` function. If executed, it starts listening to browser location events, and trigers `setRoute()` for matched route.
 
 ### App
 
