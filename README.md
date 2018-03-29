@@ -259,4 +259,28 @@ Created Router exposes a `start()` function. If executed, it starts listening to
 
 ### App
 
+In most cases manual Context and Instance managament is too low level. App abstraction asks you for initial state, starting component, and a callback. The callback will be invoked every time Global State changes, and its argument will contain the instance current component.
+
+It manages Context behind the scenes.
+
+```javascript
+const app = createApp({}, component, instance => {
+    // Patch the DOM here.
+})
+
+app()
+```
+
+App abstraction reserves the `$app` field in Global State for its own use. It will hold the current Instance in `$app.instance`. If you ever want to change the instance, just point one of your Component's sockets to `$app.instance` and replace it with a different one.
+
 ### RoutedApp
+
+Routed app is a similar abstraction to App, but instead of Component it takes in Router configuration.
+
+It will manage the Router, as well as the Context, behind the scenes.
+
+```javascript
+const app = createRoutedApp({}, routerConfig, instance => {
+    // Patch the DOM here.
+})
+```
