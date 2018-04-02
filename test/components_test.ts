@@ -224,32 +224,6 @@ test.cb('Component triggers $init action on instantiation', t => {
     const instance = createInstance(context, component)
 })
 
-test.cb('Component instances are cached and created only once', t => {
-    let initCount = 0
-    const template = createTemplate({
-        actions: {
-            $init: () => model => {
-                initCount += 1
-                if (initCount > 1)
-                    t.fail('Init action should be called only once.')
-                return model
-            },
-        },
-        render: () => {
-            t.end()
-        },
-    })
-
-    const component = createComponent(template, {})
-
-    const context = createContext({})
-
-    const firstInstance = createInstance(context, component)
-    const secondInstance = createInstance(context, component)
-
-    setTimeout(firstInstance)
-})
-
 test('Components can declare child components and pass props to them', t => {
     const childTemplate = createTemplate({
         render: ({ props }) => {
