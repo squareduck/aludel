@@ -119,8 +119,7 @@ function createInstance(
     if (cachedInstance) return cachedInstance
 
     // Otherwise create a new instance and cache it
-    //
-    addDependency(contextState.registry, component)
+    // But first try to create all child Instances
 
     const child = Object.keys(component.template.children).reduce(
         (acc, name) => {
@@ -135,6 +134,8 @@ function createInstance(
         },
         {},
     )
+
+    addDependency(contextState.registry, component)
 
     const action = connectActions(
         state,
@@ -254,13 +255,35 @@ function addDependency(registry: ComponentRegistry, component: Component) {
             dependencies: [],
         }
 
+    // If Component has children then recursively add all subchildren
+    // as dependencies. Any Action from any child should trigger redraw
+    // on top parent.
+    if (component.template.children) {
+        Object.keys(component.template.children).forEach(name => {
+            const child = component.template.children[name]
+            const childDeps = registry[child.signature].dependencies
+            registry[signature].dependencies = [
+                ...registry[signature].dependencies,
+                child.signature,
+                ...childDeps,
+            ]
+        })
+    }
+
+    // Go through all registered Components and compare paths
     // If paths match we say that components depend on each other
     Object.keys(registry).forEach(depSignature => {
         const candidate = registry[depSignature].component
 
         if (hasMatchingPaths(component, candidate)) {
-            registry[depSignature].dependencies.push(signature)
-            registry[signature].dependencies.push(depSignature)
+            registry[depSignature].dependencies = [
+                ...registry[depSignature].dependencies,
+                signature,
+            ]
+            registry[signature].dependencies = [
+                ...registry[signature].dependencies,
+                depSignature,
+            ]
         }
     })
 }

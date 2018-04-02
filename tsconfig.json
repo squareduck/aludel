@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "ES2017",
+        "target": "es5",
+        "lib": ["es2017", "es7", "es6", "dom"],
         "outDir": "./dist",
         "moduleResolution": "node",
         "declaration": true,

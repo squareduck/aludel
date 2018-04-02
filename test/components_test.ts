@@ -279,3 +279,49 @@ test('Components can declare child components and pass props to them', t => {
 
     t.deepEqual(['Child Ash', 'Child Bob', 'Child Cid'], instance())
 })
+
+test.cb('Parent component redraws after Actions in Children', t => {
+    let connectedAction
+    const childTemplate = createTemplate({
+        actions: {
+            $init: () => model => {
+                model.$local = { counter: 0 }
+                return model
+            },
+            increment: () => model => {
+                model.$local.counter += 1
+                return model
+            },
+        },
+        render: ({ model, action }) => {
+            connectedAction = action.increment
+            return model.$local.counter
+        },
+    })
+    const childComponent = createComponent(childTemplate, {})
+
+    const parentTemplate = createTemplate({
+        children: {
+            counter: childComponent,
+        },
+        render: ({ child }) => {
+            return child.counter() + '!'
+        },
+    })
+    const parentComponent = createComponent(parentTemplate, {})
+
+    let renderCount = 0
+    const context = createContext({}, state => {
+        renderCount += 1
+        if (renderCount === 1) {
+            t.is('0!', parentInstance())
+            connectedAction()
+        }
+        if (renderCount === 2) {
+            t.is('1!', parentInstance())
+            t.end()
+        }
+    })
+
+    const parentInstance = createInstance(context, parentComponent)
+})

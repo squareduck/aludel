@@ -3,7 +3,7 @@
     "name": "aludel",
     "description":
         "Web app framework with global store and tightly scoped components",
-    "version": "0.0.12",
+    "version": "0.0.15",
     "homepage": "https://github.com/squareduck/aludel",
     "repository": {
         "type": "git",
@@ -38,6 +38,5 @@
         "lodash.set": "^4.3.2",
         "object-hash": "^1.2.0",
         "url-mapper": "^2.0.0"
-    },
-    "files": ["dist/src/index.js", "dist/src/index.d.ts"]
+    }
 }
