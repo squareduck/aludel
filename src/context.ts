@@ -160,6 +160,7 @@ export type Context = {
         actions: ActionMap,
         signature?: string,
     ) => ConnectedActionMap
+    triggerUpdate: () => void
     createInstance: (component: Component, tools: InstanceTools) => Instance
 }
 
@@ -180,6 +181,15 @@ export function createContext(
 ): Context {
     const state = Object.assign({}, initialState)
 
+    const actions = connectActions(
+        state,
+        {},
+        {
+            triggerUpdate: () => model => model,
+        },
+        onUpdate,
+    )
+
     return {
         localModel: (paths: PathMap) => localModel(state, paths),
         connectActions: (
@@ -187,6 +197,7 @@ export function createContext(
             actions: ActionMap,
             signature?: string,
         ) => connectActions(state, paths, actions, onUpdate, signature),
+        triggerUpdate: actions.triggerUpdate,
         createInstance: (component: Component, tools: InstanceTools) =>
             createInstance(state, component, tools, onUpdate),
     }

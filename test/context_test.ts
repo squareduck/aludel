@@ -115,3 +115,20 @@ test.cb('Each global state change triggers onUpdate()', t => {
     actions.setName('Bob')
     actions.setName('Cid')
 })
+
+test.cb('triggerUpdate() function dispatches an empty Action', t => {
+    const template = createTemplate({
+        render: () => 'content',
+    })
+    const component = createComponent(template, {})
+    const context = createContext({}, () => {
+        t.is('content', instance())
+        t.end()
+    })
+    const instance = createInstance(context, component)
+
+    // Component does not have $init action, so no actions will be dispatched
+    // automatically and Context won't be updated.
+
+    context.triggerUpdate()
+})
