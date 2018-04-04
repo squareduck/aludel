@@ -3,7 +3,7 @@
     "name": "aludel",
     "description":
         "Web app framework with global store and tightly scoped components",
-    "version": "0.0.17",
+    "version": "0.0.19",
     "homepage": "https://github.com/squareduck/aludel",
     "repository": {
         "type": "git",
@@ -15,7 +15,7 @@
     "main": "dist/src/index",
     "typings": "dist/src/index",
     "scripts": {
-        "build": "npm run clean & tsc -p .",
+        "build": "npm run clean; tsc -p .",
         "app": "parcel ./demo/index.html",
         "clean": "rm -rf ./dist",
         "pages": "parcel build ./demo --out-dir ./ --public-url ./",

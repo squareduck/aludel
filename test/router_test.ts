@@ -100,11 +100,11 @@ test.cb('Router reacts to wildcard route and redirects', t => {
     const component = createComponent(template, {})
 
     let updateCount = 0
-    const expectedRoute = ['About', 'Help']
+    const expectedRoute = ['Home', 'About', 'Help']
     const context = createContext({}, state => {
         t.is(expectedRoute[updateCount], state.$app.route.name)
         updateCount += 1
-        if (updateCount === 2) t.end()
+        if (updateCount === 3) t.end()
     })
 
     const routes: RouteMap = {

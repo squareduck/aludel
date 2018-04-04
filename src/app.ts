@@ -94,6 +94,5 @@ export function createRoutedApp(
 
         const root = router.flatRoutes['/']
         if (!root) throw new Error('Root route "/" was not found in routes.')
-        router.history.push('/')
     }
 }

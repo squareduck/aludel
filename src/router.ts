@@ -314,6 +314,10 @@ export function createRouter(
                         browserHistory.push(wildCardRoute, {})
                 }
             })
+            browserHistory.push(
+                browserHistory.location.pathname +
+                    browserHistory.location.search,
+            )
         },
     }
 }
