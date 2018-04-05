@@ -430,3 +430,84 @@ test.cb('router.link() and router.navigate() are in template.render()', t => {
 
     router.navigate.Home()
 })
+
+test.cb('$init actions of routed components run before first render', t => {
+    const parentTemplate = createTemplate({
+        sockets: ['parent', 'route'],
+        actions: {
+            $init: () => model => {
+                model.parent = true
+                return model
+            },
+        },
+        render: ({ model, outlet }) => {
+            return `${model.parent}/${model.route}(${outlet()})`
+        },
+    })
+
+    const parentComponent = createComponent(parentTemplate, {
+        parent: ['parent'],
+        route: ['parentRoute'],
+    })
+
+    const childTemplate = createTemplate({
+        sockets: ['child', 'route'],
+        actions: {
+            $init: () => model => {
+                model.child = true
+                return model
+            },
+        },
+        render: ({ model }) => {
+            return `${model.child}/${model.route}`
+        },
+    })
+
+    const childComponent = createComponent(childTemplate, {
+        child: ['child'],
+        route: ['childRoute'],
+    })
+
+    const routes = {
+        '/parent': {
+            name: 'Parent',
+            component: parentComponent,
+            action: () => model => {
+                model.route = true
+                return model
+            },
+            subroutes: {
+                '/child': {
+                    name: 'Child',
+                    component: childComponent,
+                    action: () => model => {
+                        model.route = true
+                        return model
+                    },
+                },
+            },
+        },
+    }
+
+    let renderCount = 0
+    const context = createContext({}, state => {
+        if (state.$app && state.$app.instance) {
+            renderCount += 1
+            if (renderCount === 1)
+                // Parent $init action is done
+                // Child $init action is not yet done
+                t.is('true/undefined(undefined/true)', state.$app.instance())
+            if (renderCount === 2) {
+                // Both $init actions are done
+                t.is('true/undefined(true/true)', state.$app.instance())
+                t.end()
+            }
+        }
+    })
+
+    const router = createRouter(context, { routes })
+
+    router.start()
+
+    router.navigate.Child()
+})

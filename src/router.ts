@@ -167,6 +167,12 @@ function createRouteSetters(
         if (typeof route === 'string') return acc
 
         acc[route.name] = params => model => {
+            const instanceChain = instantiateChain(
+                context,
+                route.componentChain,
+                navigate,
+                link,
+            )
             const lastIndex = route.componentChain.length - 1
             if (route.actionChain[lastIndex]) {
                 const routeAction = context.connectActions(
@@ -182,12 +188,7 @@ function createRouteSetters(
                 path: route.path,
                 params: params || {},
             }
-            model.instance = instantiateChain(
-                context,
-                route.componentChain,
-                navigate,
-                link,
-            )
+            model.instance = instanceChain
             return model
         }
 
@@ -216,16 +217,16 @@ function instantiateChain(
     navigate,
     link,
 ): Instance {
-    chain = chain.slice(0)
-    if (chain.length > 0) {
-        return (props: any) =>
-            createInstance(context, chain.shift(), { navigate, link })(
-                props,
-                instantiateChain(context, chain, navigate, link),
-            )
-    }
+    if (chain.length === 0) return (props: any) => {}
 
-    return (props: any) => {}
+    const [currentInstance, ...rest] = chain
+    const instance = createInstance(context, currentInstance, {
+        navigate,
+        link,
+    })
+
+    return (props: any) =>
+        instance(props, instantiateChain(context, rest, navigate, link))
 }
 
 /*

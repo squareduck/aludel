@@ -132,3 +132,32 @@ test.cb('triggerUpdate() function dispatches an empty Action', t => {
 
     context.triggerUpdate()
 })
+
+test.cb('createInstance() caches instances after first creation', t => {
+    const template = createTemplate({
+        sockets: ['counter'],
+        actions: {
+            $init: () => model => {
+                model.counter += 1
+                return model
+            },
+        },
+        render: ({ model }) => {
+            return model.counter
+        },
+    })
+
+    const component = createComponent(template, {
+        counter: ['counter'],
+    })
+
+    // Instantiation triggers $init action.
+    // We instantiate twice, but expect counter to increment once.
+    const context = createContext({ counter: 0 }, state => {
+        const instance = context.createInstance(component, {})
+        t.is(1, instance())
+        t.end()
+    })
+
+    context.createInstance(component, {})
+})

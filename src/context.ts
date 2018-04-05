@@ -104,14 +104,21 @@ function connectActions(
  */
 function createInstance(
     state: Model,
+    cache: ContextCache,
     component: Component,
     tools: InstanceTools,
     onUpdate: StateUpdateFn,
 ): Instance {
+    // Return cached Instance if we have it
+    if (cache.instances[component.signature])
+        return cache.instances[component.signature]
+
+    // Otherwise create a new one and put it in cache
     const child = Object.keys(component.template.children).reduce(
         (acc, name) => {
             acc[name] = createInstance(
                 state,
+                cache,
                 component.template.children[name],
                 tools,
                 onUpdate,
@@ -139,18 +146,25 @@ function createInstance(
             child,
             props,
             create: (component: Component) =>
-                createInstance(state, component, tools, onUpdate),
+                createInstance(state, cache, component, tools, onUpdate),
             outlet,
             navigate: tools.navigate,
             link: tools.link,
         })
     }
 
+    cache.instances[component.signature] = instance
+
     return instance
 }
 
 // Function that will be called when some Connected Action is finished.
 export type StateUpdateFn = (state: Model) => void
+
+// Context internal cache
+export type ContextCache = {
+    instances: { [key: string]: Instance }
+}
 
 // Context that glues together different Components
 export type Context = {
@@ -179,6 +193,7 @@ export function createContext(
     initialState: Model,
     onUpdate: StateUpdateFn = () => {},
 ): Context {
+    const cache: ContextCache = { instances: {} }
     const state = Object.assign({}, initialState)
 
     const actions = connectActions(
@@ -199,6 +214,6 @@ export function createContext(
         ) => connectActions(state, paths, actions, onUpdate, signature),
         triggerUpdate: actions.triggerUpdate,
         createInstance: (component: Component, tools: InstanceTools) =>
-            createInstance(state, component, tools, onUpdate),
+            createInstance(state, cache, component, tools, onUpdate),
     }
 }
