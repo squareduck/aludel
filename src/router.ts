@@ -174,14 +174,16 @@ function createRouteSetters(
                 link,
             )
             const lastIndex = route.componentChain.length - 1
+            const actionName = `${route.name} (Component)`
             if (route.actionChain[lastIndex]) {
                 const routeAction = context.connectActions(
                     route.componentChain[lastIndex].paths,
                     {
-                        action: route.actionChain[lastIndex],
+                        [actionName]: route.actionChain[lastIndex],
                     },
+                    'Router',
                 )
-                routeAction.action(params)
+                routeAction[actionName](params)
             }
             model.route = {
                 name: route.name,
@@ -198,6 +200,7 @@ function createRouteSetters(
     return context.connectActions(
         { route: ['$app', 'route'], instance: ['$app', 'instance'] },
         actions,
+        'Router',
     )
 }
 
@@ -220,13 +223,12 @@ function instantiateChain(
     if (chain.length === 0) return (props: any) => {}
 
     const [currentInstance, ...rest] = chain
-    const instance = createInstance(context, currentInstance, {
-        navigate,
-        link,
-    })
 
     return (props: any) =>
-        instance(props, instantiateChain(context, rest, navigate, link))
+        createInstance(context, currentInstance, { navigate, link })(
+            props,
+            instantiateChain(context, rest, navigate, link),
+        )
 }
 
 /*

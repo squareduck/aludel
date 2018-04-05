@@ -45,6 +45,7 @@ export function createApp(
                     return model
                 },
             },
+            'App',
         )
 
         actions.setInstance(createInstance(context, topComponent))

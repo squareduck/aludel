@@ -62,11 +62,6 @@ export type ConnectedActionMap = { [key: string]: ConnectedAction }
  * Result of running an Action is always treated as a Promise. So changes
  * to Global State and calling of onUpdate will happen on the next tick
  * of Event Loop.
- * 
- * If signature was passed we put it into contextState.lastActionOwner to
- * indicate which Component is responsible for last completed Action.
- * This is used to calculate which Instances need to recalculate their
- * render functions and update Context's Render Cache.
  *
  * Returns a map of Connected Actions that mirrors input Actions Map.
  *
@@ -84,7 +79,11 @@ function connectActions(
             const model = localModel(state, paths)
             Promise.resolve(action(...args)(model)).then(change => {
                 state = applyLocalModel(state, paths, change)
-                onUpdate(state)
+                const actionInfo = {
+                    source: signature,
+                    name: name,
+                }
+                onUpdate(state, actionInfo)
             })
         }
         acc[name] = connectedAction
@@ -159,7 +158,10 @@ function createInstance(
 }
 
 // Function that will be called when some Connected Action is finished.
-export type StateUpdateFn = (state: Model) => void
+export type StateUpdateFn = (
+    state: Model,
+    info: { source: string; name: string },
+) => void
 
 // Context internal cache
 export type ContextCache = {
@@ -203,6 +205,7 @@ export function createContext(
             triggerUpdate: () => model => model,
         },
         onUpdate,
+        'Context',
     )
 
     return {

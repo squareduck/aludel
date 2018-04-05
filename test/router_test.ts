@@ -490,14 +490,21 @@ test.cb('$init actions of routed components run before first render', t => {
     }
 
     let renderCount = 0
-    const context = createContext({}, state => {
+    const context = createContext({}, (state, info) => {
         if (state.$app && state.$app.instance) {
             renderCount += 1
             if (renderCount === 1)
+                // Parent $init action is not done
+                // Child $init action is not done
+                t.is(
+                    'undefined/undefined(undefined/true)',
+                    state.$app.instance(),
+                )
+            if (renderCount === 2)
                 // Parent $init action is done
-                // Child $init action is not yet done
+                // Child $init action is not done
                 t.is('true/undefined(undefined/true)', state.$app.instance())
-            if (renderCount === 2) {
+            if (renderCount === 3) {
                 // Both $init actions are done
                 t.is('true/undefined(true/true)', state.$app.instance())
                 t.end()
