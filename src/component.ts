@@ -77,14 +77,15 @@ export function createComponent(template: Template, paths: PathMap): Component {
     // Check that we have same amount of paths and sockets
     const equalAmount = Object.keys(paths).length === template.sockets.length
     // Check that we have a path for each socket
-    const allSocketsCovered =
-        template.sockets.filter(
-            socket => Object.keys(paths).indexOf(socket) < 0,
-        ).length === 0
+    const uncoveredSockets = template.sockets.filter(
+        socket => Object.keys(paths).indexOf(socket) < 0,
+    )
 
     // If either is false we throw error
-    if (!equalAmount || !allSocketsCovered)
-        throw new Error(`Paths and sockets don't match.`)
+    if (!equalAmount || uncoveredSockets.length > 0) {
+        const socketList = uncoveredSockets.join(', ')
+        throw new Error(`Component paths don't cover sockets: ${socketList}`)
+    }
 
     const signature = hash({ template, paths })
 

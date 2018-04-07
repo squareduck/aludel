@@ -94,15 +94,15 @@ function flattenRoutes(
                 throw new Error(
                     `Route with name ${
                         flatRoute.name
-                    } path does not start with slash.`,
+                    } does not start with slash`,
                 )
             if (namePool.includes(flatRoute.name))
                 throw new Error(
-                    `Route with name ${flatRoute.name} is already used.`,
+                    `Route with name ${flatRoute.name} is already defined`,
                 )
             if (pathPool.includes(flatRoute.path))
                 throw new Error(
-                    `Route with path ${flatRoute.path} is already used.`,
+                    `Route with path ${flatRoute.path} is already defined`,
                 )
 
             namePool.push(flatRoute.name)

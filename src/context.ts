@@ -177,7 +177,7 @@ export type Context = {
         signature?: string,
     ) => ConnectedActionMap
     triggerUpdate: () => void
-    createInstance: (component: Component, tools: InstanceTools) => Instance
+    createInstance: (component: Component, tools?: InstanceTools) => Instance
 }
 
 /*
@@ -216,7 +216,7 @@ export function createContext(
             signature?: string,
         ) => connectActions(state, paths, actions, onUpdate, signature),
         triggerUpdate: actions.triggerUpdate,
-        createInstance: (component: Component, tools: InstanceTools) =>
+        createInstance: (component: Component, tools: InstanceTools = {}) =>
             createInstance(state, cache, component, tools, onUpdate),
     }
 }

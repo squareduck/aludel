@@ -8,129 +8,131 @@ import {
 } from '../src/index'
 import { homeComponent } from '../demo/components/home'
 
-test.cb('Single component app renders on global state updates', t => {
-    let setName
-    const template = createTemplate({
-        sockets: ['name'],
-        actions: {
-            setName: name => model => {
-                model.name = name
-                return model
-            },
-        },
-        render: ({ model, action }) => {
-            // Extract this connected action into scope above on first render
-            setName = action.setName
-            return model.name
-        },
-    })
+test.todo('Rewrite tests')
 
-    const component = createComponent(template, {
-        name: ['name'],
-    })
+// test.cb('Single component app renders on global state updates', t => {
+//     let setName
+//     const template = createTemplate({
+//         sockets: ['name'],
+//         actions: {
+//             setName: name => model => {
+//                 model.name = name
+//                 return model
+//             },
+//         },
+//         render: ({ model, action }) => {
+//             // Extract this connected action into scope above on first render
+//             setName = action.setName
+//             return model.name
+//         },
+//     })
 
-    let updateCounter = 0
-    const expectedNames = ['John', 'Ash', 'Bob', 'Cid']
-    const app = createApp({ name: 'John' }, component, instance => {
-        t.is(expectedNames[updateCounter], instance())
-        updateCounter += 1
-        updateCounter === 3 && t.end()
-    })
+//     const component = createComponent(template, {
+//         name: ['name'],
+//     })
 
-    app()
+//     let updateCounter = 0
+//     const expectedNames = ['John', 'Ash', 'Bob', 'Cid']
+//     const app = createApp({ name: 'John' }, component, instance => {
+//         t.is(expectedNames[updateCounter], instance())
+//         updateCounter += 1
+//         updateCounter === 3 && t.end()
+//     })
 
-    // Need to wait for the next tick (promise needs to resolve before rerender)
-    setTimeout(() => {
-        setName('Ash')
-        setName('Bob')
-        setName('Cid')
-    })
-})
+//     app()
 
-test.cb('Can replace $app.instance dynamically from actions', t => {
-    const userTemplate = createTemplate({
-        render: () => 'User',
-    })
-    const userComponent = createComponent(userTemplate, {})
+//     // Need to wait for the next tick (promise needs to resolve before rerender)
+//     setTimeout(() => {
+//         setName('Ash')
+//         setName('Bob')
+//         setName('Cid')
+//     })
+// })
 
-    let connectedAction
-    const homeTemplate = createTemplate({
-        sockets: ['topInstance'],
-        actions: {
-            replaceInstance: instance => model => {
-                model.topInstance = instance
-                return model
-            },
-        },
-        render: ({ model, action, create }) => {
-            const userInstance = create(userComponent)
-            connectedAction = () => action.replaceInstance(userInstance)
-            return 'Home'
-        },
-    })
-    const homeComponent = createComponent(homeTemplate, {
-        topInstance: ['$app', 'instance'],
-    })
+// test.cb('Can replace $app.instance dynamically from actions', t => {
+//     const userTemplate = createTemplate({
+//         render: () => 'User',
+//     })
+//     const userComponent = createComponent(userTemplate, {})
 
-    let renderCount = 0
-    const app = createApp({}, homeComponent, instance => {
-        renderCount += 1
-        if (renderCount === 1) {
-            t.is('Home', instance())
-            connectedAction()
-        }
-        if (renderCount === 2) {
-            t.is('User', instance())
-            t.end()
-        }
-    })
+//     let connectedAction
+//     const homeTemplate = createTemplate({
+//         sockets: ['topInstance'],
+//         actions: {
+//             replaceInstance: instance => model => {
+//                 model.topInstance = instance
+//                 return model
+//             },
+//         },
+//         render: ({ model, action, create }) => {
+//             const userInstance = create(userComponent)
+//             connectedAction = () => action.replaceInstance(userInstance)
+//             return 'Home'
+//         },
+//     })
+//     const homeComponent = createComponent(homeTemplate, {
+//         topInstance: ['$app', 'instance'],
+//     })
 
-    app()
-})
+//     let renderCount = 0
+//     const app = createApp({}, homeComponent, instance => {
+//         renderCount += 1
+//         if (renderCount === 1) {
+//             t.is('Home', instance())
+//             connectedAction()
+//         }
+//         if (renderCount === 2) {
+//             t.is('User', instance())
+//             t.end()
+//         }
+//     })
 
-// Home route finding and handling of error when '/' is not defined
-test.cb('Routed app renders the root route', t => {
-    const homeTemplate = createTemplate({
-        render: () => 'Home',
-    })
-    const homeComponent = createComponent(homeTemplate, {})
+//     app()
+// })
 
-    const userTemplate = createTemplate({
-        render: () => 'User',
-    })
-    const userComponent = createComponent(userTemplate, {})
+// // Home route finding and handling of error when '/' is not defined
+// test.cb('Routed app renders the root route', t => {
+//     const homeTemplate = createTemplate({
+//         render: () => 'Home',
+//     })
+//     const homeComponent = createComponent(homeTemplate, {})
 
-    const badRoutes = {
-        '/noRoot': {
-            name: 'Home',
-            component: homeComponent,
-        },
-        '/user/:id': {
-            name: 'User',
-            component: userComponent,
-        },
-    }
+//     const userTemplate = createTemplate({
+//         render: () => 'User',
+//     })
+//     const userComponent = createComponent(userTemplate, {})
 
-    t.throws(() => {
-        const badApp = createRoutedApp({}, { routes: badRoutes }, () => {})
-        badApp()
-    })
+//     const badRoutes = {
+//         '/noRoot': {
+//             name: 'Home',
+//             component: homeComponent,
+//         },
+//         '/user/:id': {
+//             name: 'User',
+//             component: userComponent,
+//         },
+//     }
 
-    const routes = {
-        '/': {
-            name: 'Home',
-            component: homeComponent,
-        },
-        '/user/:id': {
-            name: 'User',
-            component: userComponent,
-        },
-    }
+//     t.throws(() => {
+//         const badApp = createRoutedApp({}, { routes: badRoutes }, () => {})
+//         badApp()
+//     })
 
-    const app = createRoutedApp({}, { routes }, instance => {
-        t.is('Home', instance())
-        t.end()
-    })
+//     const routes = {
+//         '/': {
+//             name: 'Home',
+//             component: homeComponent,
+//         },
+//         '/user/:id': {
+//             name: 'User',
+//             component: userComponent,
+//         },
+//     }
 
-    app()
-})
+//     const app = createRoutedApp({}, { routes }, instance => {
+//         t.is('Home', instance())
+//         t.end()
+//     })
+
+//     app()
+// })
