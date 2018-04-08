@@ -1,6 +1,5 @@
 import get from 'lodash.get'
 import set from 'lodash.set'
-import produce from 'immer'
 import {
     Action,
     ActionMap,
