@@ -26,15 +26,18 @@ import { RouteMap, createRouter, RouterConfig } from './router'
 export function createApp(
     initialModel: Model,
     topComponent: Component,
-    render: (instance: Instance) => void,
+    render: (
+        instance: Instance,
+        info: { source: string; name: string },
+    ) => void,
 ): () => void {
     initialModel['$app'] = {
         instance: () => {},
     }
 
     return () => {
-        const context = createContext(initialModel, state => {
-            render(state['$app']['instance'])
+        const context = createContext(initialModel, (state, action) => {
+            render(state['$app']['instance'], action)
         })
 
         const actions = context.connectActions(
@@ -78,7 +81,10 @@ export function createApp(
 export function createRoutedApp(
     initialModel: Model,
     routerConfig: RouterConfig,
-    render: (instance: Instance) => void,
+    render: (
+        instance: Instance,
+        info: { source: string; name: string },
+    ) => void,
 ): () => void {
     initialModel['$app'] = {
         instance: () => {},
@@ -86,14 +92,11 @@ export function createRoutedApp(
     }
 
     return () => {
-        const context = createContext(initialModel, state => {
-            render(state['$app']['instance'])
+        const context = createContext(initialModel, (state, action) => {
+            render(state['$app']['instance'], action)
         })
 
         const router = createRouter(context, routerConfig)
         router.start()
-
-        const root = router.flatRoutes['/']
-        if (!root) throw new Error('Root route "/" was not found in routes.')
     }
 }

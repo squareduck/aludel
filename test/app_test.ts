@@ -8,87 +8,85 @@ import {
 } from '../src/index'
 import { homeComponent } from '../demo/components/home'
 
-test.todo('Rewrite tests')
+test.cb('createApp() returns function which starts update loop', t => {
+    const template = createTemplate({
+        render: () => 'content',
+    })
 
-// test.cb('Single component app renders on global state updates', t => {
-//     let setName
-//     const template = createTemplate({
-//         sockets: ['name'],
-//         actions: {
-//             setName: name => model => {
-//                 model.name = name
-//                 return model
-//             },
-//         },
-//         render: ({ model, action }) => {
-//             // Extract this connected action into scope above on first render
-//             setName = action.setName
-//             return model.name
-//         },
-//     })
+    const component = createComponent(template, {})
 
-//     const component = createComponent(template, {
-//         name: ['name'],
-//     })
+    const app = createApp({}, component, (instance, action) => {
+        t.deepEqual(action, { source: 'App', name: 'setInstance' })
+        t.is(instance(), 'content')
+        t.end()
+    })
 
-//     let updateCounter = 0
-//     const expectedNames = ['John', 'Ash', 'Bob', 'Cid']
-//     const app = createApp({ name: 'John' }, component, instance => {
-//         t.is(expectedNames[updateCounter], instance())
-//         updateCounter += 1
-//         updateCounter === 3 && t.end()
-//     })
+    app()
+})
 
-//     app()
+test.cb('createApp() renders instance from $app.instance', t => {
+    const secondTemplate = createTemplate({
+        render: () => 'second',
+    })
+    const secondComponent = createComponent(secondTemplate, {})
 
-//     // Need to wait for the next tick (promise needs to resolve before rerender)
-//     setTimeout(() => {
-//         setName('Ash')
-//         setName('Bob')
-//         setName('Cid')
-//     })
-// })
+    const firstTemplate = createTemplate({
+        sockets: ['instance'],
+        actions: {
+            replaceInstance: instance => model => {
+                model.instance = instance
+                return model
+            },
+        },
+        render: ({ action, create }) => {
+            action.replaceInstance(create(secondComponent))
+            return 'first'
+        },
+    })
+    const firstComponent = createComponent(firstTemplate, {
+        instance: ['$app', 'instance'],
+    })
 
-// test.cb('Can replace $app.instance dynamically from actions', t => {
-//     const userTemplate = createTemplate({
-//         render: () => 'User',
-//     })
-//     const userComponent = createComponent(userTemplate, {})
+    const expectedActions = [
+        { source: 'App', name: 'setInstance' },
+        { source: firstComponent.signature, name: 'replaceInstance' },
+    ]
 
-//     let connectedAction
-//     const homeTemplate = createTemplate({
-//         sockets: ['topInstance'],
-//         actions: {
-//             replaceInstance: instance => model => {
-//                 model.topInstance = instance
-//                 return model
-//             },
-//         },
-//         render: ({ model, action, create }) => {
-//             const userInstance = create(userComponent)
-//             connectedAction = () => action.replaceInstance(userInstance)
-//             return 'Home'
-//         },
-//     })
-//     const homeComponent = createComponent(homeTemplate, {
-//         topInstance: ['$app', 'instance'],
-//     })
+    const expectedRenders = ['first', 'second']
 
-//     let renderCount = 0
-//     const app = createApp({}, homeComponent, instance => {
-//         renderCount += 1
-//         if (renderCount === 1) {
-//             t.is('Home', instance())
-//             connectedAction()
-//         }
-//         if (renderCount === 2) {
-//             t.is('User', instance())
-//             t.end()
-//         }
-//     })
+    let updateCount = 0
+    const app = createApp({}, firstComponent, (instance, action) => {
+        updateCount += 1
+        t.deepEqual(action, expectedActions[updateCount - 1])
+        t.is(instance(), expectedRenders[updateCount - 1])
+        if (updateCount === 2) t.end()
+    })
 
-//     app()
-// })
+    app()
+})
+
+test.cb('createRoutedApp() starts router in addition to creating app', t => {
+    const template = createTemplate({
+        render: () => 'content',
+    })
+    const component = createComponent(template, {})
+
+    const routes = {
+        '*': '/home',
+        '/home': {
+            name: 'Home',
+            component,
+        },
+    }
+
+    const routedApp = createRoutedApp({}, { routes }, (instance, action) => {
+        t.deepEqual(action, { source: 'Router', name: 'Home' })
+        t.is(instance(), 'content')
+        t.end()
+    })
+
+    routedApp()
+})
 
 // // Home route finding and handling of error when '/' is not defined
 // test.cb('Routed app renders the root route', t => {
