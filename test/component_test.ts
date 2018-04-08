@@ -7,11 +7,11 @@ import {
 } from '../src/index'
 
 test('createTemplate() fills in default values', t => {
-    const tpl = createTemplate({})
-    t.deepEqual([], tpl.sockets)
-    t.deepEqual({}, tpl.actions)
-    t.deepEqual({}, tpl.children)
-    t.truthy(typeof tpl.render === 'function')
+    const template = createTemplate({})
+    t.deepEqual([], template.sockets)
+    t.deepEqual({}, template.actions)
+    t.deepEqual({}, template.children)
+    t.truthy(typeof template.render === 'function')
 })
 
 test('createComponent() throws if paths dont cover all Template sockets', t => {

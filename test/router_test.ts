@@ -235,6 +235,40 @@ test.cb('createRouter() creates setRoute action for each route', t => {
     router.setRoute.Item({ id: 12 })
 })
 
+test.cb('createRouter() wires route actions to run inside setRoute', t => {
+    const template = createTemplate({
+        sockets: ['counter'],
+    })
+    const component = createComponent(template, { counter: ['counter'] })
+
+    const expectedActions = [
+        { source: 'Router', name: `Home (${component.signature})` },
+        { source: 'Router', name: 'Home' },
+    ]
+
+    let updateCount = 0
+    const context = createContext({ counter: 0 }, (state, action) => {
+        updateCount += 1
+        t.deepEqual(action, expectedActions[updateCount - 1])
+        t.is(state.counter, 5)
+        if (updateCount === 2) t.end()
+    })
+
+    const routes = {
+        '/home': {
+            name: 'Home',
+            component: component,
+            action: params => model => {
+                model.counter += params.amount
+                return model
+            },
+        },
+    }
+
+    const router = createRouter(context, { routes })
+    router.setRoute.Home({ amount: 5 })
+})
+
 test('createRouter() creates link() for each route', t => {
     const template = createTemplate({})
     const component = createComponent(template, {})
@@ -274,11 +308,15 @@ test.cb('createRouter() exposes start() which enables history listening', t => {
         { name: 'Shop', path: '/shop', params: {} },
         { name: 'Item', path: '/shop/item/:id', params: { id: '12' } },
         { name: 'About', path: '/about', params: { filter: 'text' } },
+        { name: 'About', path: '/about', params: {} },
+        { name: 'Shop', path: '/shop', params: {} },
     ]
     const expectedActions = [
         { source: 'Router', name: 'Shop' },
         { source: 'Router', name: 'Item' },
         { source: 'Router', name: 'About' },
+        { source: 'Router', name: 'About' },
+        { source: 'Router', name: 'Shop' },
     ]
 
     let updateCount = 0
@@ -286,7 +324,7 @@ test.cb('createRouter() exposes start() which enables history listening', t => {
         updateCount += 1
         t.deepEqual(state.$app.route, expectedRoutes[updateCount - 1])
         t.deepEqual(action, expectedActions[updateCount - 1])
-        if (updateCount === 3) t.end()
+        if (updateCount === 5) t.end()
     })
 
     const routes = {
@@ -301,6 +339,7 @@ test.cb('createRouter() exposes start() which enables history listening', t => {
                 },
             },
         },
+        '/info': '/about',
         '/about': {
             name: 'About',
             component,
@@ -313,120 +352,37 @@ test.cb('createRouter() exposes start() which enables history listening', t => {
 
     router.history.push('/shop/item/12')
     router.history.push('/about?filter=text')
+    router.history.push('/info')
+    router.history.push('/doesnotexist')
 })
 
-// test.cb('Router reacts to wildcard route and redirects', t => {
-//     const template = createTemplate({})
-//     const component = createComponent(template, {})
+test.cb('createRouter() adds layoutComponent into each component chain', t => {
+    const layoutTemplate = createTemplate({
+        render: ({ outlet }) => `layout ${outlet()}`,
+    })
 
-//     let updateCount = 0
-//     const expectedRoute = ['Home', 'About', 'Help']
-//     const context = createContext({}, state => {
-//         t.is(expectedRoute[updateCount], state.$app.route.name)
-//         updateCount += 1
-//         if (updateCount === 3) t.end()
-//     })
+    const layoutComponent = createComponent(layoutTemplate, {})
 
-//     const routes: RouteMap = {
-//         '*': '/help',
-//         '/': {
-//             name: 'Home',
-//             component,
-//             subroutes: {
-//                 '/about': {
-//                     name: 'About',
-//                     component,
-//                 },
-//             },
-//         },
-//         '/help': {
-//             name: 'Help',
-//             component,
-//         },
-//         '/info': '/about',
-//     }
+    const homeTempplate = createTemplate({
+        render: () => 'home',
+    })
 
-//     const router = createRouter(context, { routes })
+    const homeComponent = createComponent(homeTempplate, {})
 
-//     router.start()
+    const context = createContext({}, (state, action) => {
+        t.deepEqual(action, { source: 'Router', name: 'Home' })
+        t.is(state.$app.instance(), 'layout home')
+        t.end()
+    })
 
-//     router.history.push('/info', {})
-//     router.history.push('/doesnotexist', {})
-// })
+    const routes = {
+        '/home': {
+            name: 'Home',
+            component: homeComponent,
+        },
+    }
 
-// test.cb('Router inserts layoutComponent into each component chain', t => {
-//     const layoutTemplate = createTemplate({
-//         render: ({ outlet }) => {
-//             return `Layout ${outlet()}`
-//         },
-//     })
-//     const layoutComponent = createComponent(layoutTemplate, {})
+    const router = createRouter(context, { routes, layoutComponent })
 
-//     const homeTemplate = createTemplate({
-//         render: () => 'Home',
-//     })
-//     const homeComponent = createComponent(homeTemplate, {})
-
-//     const context = createContext({}, state => {
-//         t.is('Layout Home', state.$app.instance())
-//         t.end()
-//     })
-
-//     const routes = {
-//         '/': {
-//             name: 'Home',
-//             component: homeComponent,
-//         },
-//     }
-
-//     const router = createRouter(context, { routes, layoutComponent })
-
-//     router.start()
-
-//     t.deepEqual(router.flatRoutes, {
-//         '/': {
-//             name: 'Home',
-//             path: '/',
-//             componentChain: [layoutComponent, homeComponent],
-//             actionChain: [undefined, undefined],
-//         },
-//     })
-
-//     router.navigate.Home()
-// })
-
-// test.cb('Route actions are executed in context of route component', t => {
-//     const template = createTemplate({
-//         sockets: ['counter'],
-//         render: ({ model }) => model.counter,
-//     })
-
-//     const component = createComponent(template, {
-//         counter: ['counter'],
-//     })
-
-//     let renderCount = 0
-//     const context = createContext({ counter: 0 }, state => {
-//         renderCount += 1
-//         t.is(50, state.counter)
-//         if (renderCount === 2) {
-//             t.is(50, state.$app.instance())
-//             t.end()
-//         }
-//     })
-
-//     const routes = {
-//         '/increment/:amount': {
-//             name: 'Increment',
-//             component: component,
-//             action: ({ amount }) => model => {
-//                 model.counter += amount
-//                 return model
-//             },
-//         },
-//     }
-
-//     const router = createRouter(context, { routes })
-
-//     router.setRoute.Increment({ amount: 50 })
-// })
+    router.setRoute.Home()
+})

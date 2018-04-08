@@ -174,7 +174,9 @@ function createRouteSetters(
                 link,
             )
             const lastIndex = route.componentChain.length - 1
-            const actionName = `${route.name} (Component)`
+            const actionName = `${route.name} (${
+                route.componentChain[lastIndex].signature
+            })`
             if (route.actionChain[lastIndex]) {
                 const routeAction = context.connectActions(
                     route.componentChain[lastIndex].paths,
