@@ -2,15 +2,22 @@ import { LocalModel } from './context'
 import { Partial } from './component'
 import uuid from 'uuid/v4'
 
+// Function that decides if a field value is valid
 export type ValidationFn = (value) => boolean
 export type ValidationField = string | ValidationFn
 
+// Model configuration
 export type ModelConfig = {
+    // If fields in not empty:
+    // - only described fields are permitted
+    // - all described fields are required
     fields?: { [key: string]: ValidationField }
+    // If defaults is not empty:
+    // - missing fields will be filled from default value
     defaults?: { [key: string]: any }
 }
 
-export type LocalModel = {
+export type Model = {
     path: string[]
     insert: (state: PartialModelState, instance: LocalModel) => string
     get: (state: PartialModelState, id: string) => LocalModel
@@ -24,6 +31,19 @@ export type LocalModel = {
         change: (instance: LocalModel) => LocalModel,
     ) => LocalModel
     remove: (state: PartialModelState, id: string) => boolean
+    connect: (state: PartialModelState) => ConnectedModel
+}
+
+export type ConnectedModel = {
+    path: string[]
+    insert: (instance: LocalModel) => string
+    get: (id: string) => LocalModel
+    filter: (filter: (instance: LocalModel) => boolean) => LocalModel[]
+    update: (
+        id: string,
+        change: (instance: LocalModel) => LocalModel,
+    ) => LocalModel
+    remove: (id: string) => boolean
 }
 
 export type ModelState = {
@@ -160,16 +180,27 @@ function applyDefaults(
     }
 }
 
-export function createModel(
-    name: string,
-    config: ModelConfig = {},
-): LocalModel {
+function connect(state: LocalModel, model): ConnectedModel {
     return {
+        path: model.path,
+        insert: instance => model.insert(state, instance),
+        get: id => model.get(state, id),
+        filter: filterFn => model.filter(state, filterFn),
+        update: (id, updateFn) => model.update(state, id, updateFn),
+        remove: id => model.remove(state, id),
+    }
+}
+
+export function createModel(name: string, config: ModelConfig = {}): Model {
+    const model = {
         path: modelPath(name),
         insert: (state, instance) => insert(state, config, instance),
         get: (state, id) => get(state, id),
-        filter: (state, fn) => filter(state, fn),
-        update: (state, id, change) => update(state, config, id, change),
+        filter: (state, filterFn) => filter(state, filterFn),
+        update: (state, id, changeFn) => update(state, config, id, changeFn),
         remove: (state, id) => remove(state, id),
+        connect: state => connect(state, model),
     }
+
+    return model
 }

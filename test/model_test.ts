@@ -219,3 +219,17 @@ test('createModel().remove() deletes instance from collection by id', t => {
     t.is(result, true)
     t.is(model.get(state, id), undefined)
 })
+
+test('createModel().connect() fills in state parameter', t => {
+    const state = {}
+    const model = createModel('User')
+    const connectedModel = model.connect(state)
+
+    const id = connectedModel.insert({ name: 'John', age: 21 })
+    t.deepEqual(connectedModel.get(id), {
+        id,
+        name: 'John',
+        age: 21,
+    })
+    t.deepEqual(state['collection'][id], connectedModel.get(id))
+})
