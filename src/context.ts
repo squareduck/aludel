@@ -10,7 +10,7 @@ import {
 } from './component'
 
 // Data storage
-export type Model = { [key: string]: any }
+export type LocalModel = { [key: string]: any }
 
 /*
  * Produce a local model by resolving each path against state object.
@@ -35,7 +35,11 @@ function localModel(state, paths) {
  * sure not to return corresponding fields.
  *
  */
-function applyLocalModel(state: Model, paths: PathMap, change: Model): Model {
+function applyLocalModel(
+    state: LocalModel,
+    paths: PathMap,
+    change: LocalModel,
+): LocalModel {
     return Object.keys(paths).reduce((acc, name) => {
         if (change.hasOwnProperty(name))
             return set(acc, paths[name], change[name])
@@ -66,7 +70,7 @@ export type ConnectedActionMap = { [key: string]: ConnectedAction }
  *
  */
 function connectActions(
-    state: Model,
+    state: LocalModel,
     paths: PathMap,
     actions: ActionMap,
     onUpdate: StateUpdateFn,
@@ -101,7 +105,7 @@ function connectActions(
  *
  */
 function createInstance(
-    state: Model,
+    state: LocalModel,
     cache: ContextCache,
     component: Component,
     tools: InstanceTools,
@@ -136,7 +140,7 @@ function createInstance(
 
     if (action.$init) action.$init()
 
-    const instance = (props: Model = {}, outlet: Instance = () => {}) => {
+    const instance = (props: LocalModel = {}, outlet: Instance = () => {}) => {
         const model = localModel(state, component.paths)
         return component.template.render({
             model,
@@ -158,7 +162,7 @@ function createInstance(
 
 // Function that will be called when some Connected Action is finished.
 export type StateUpdateFn = (
-    state: Model,
+    state: LocalModel,
     info: { source: string; name: string },
 ) => void
 
@@ -169,7 +173,7 @@ export type ContextCache = {
 
 // Context that glues together different Components
 export type Context = {
-    localModel: (paths: PathMap) => Model
+    localModel: (paths: PathMap) => LocalModel
     connectActions: (
         paths: PathMap,
         actions: ActionMap,
@@ -191,7 +195,7 @@ export type Context = {
  *
  */
 export function createContext(
-    initialState: Model,
+    initialState: LocalModel,
     onUpdate: StateUpdateFn = () => {},
 ): Context {
     const cache: ContextCache = { instances: {} }
