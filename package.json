@@ -1,8 +1,9 @@
 {
     "author": "Daniil Velichko <danvelduck@gmail.com>",
     "name": "aludel",
-    "description": "Web app framework with global store and tightly scoped components",
-    "version": "0.0.20",
+    "description":
+        "Web app framework with global store and tightly scoped components",
+    "version": "0.0.21",
     "homepage": "https://github.com/squareduck/aludel",
     "repository": {
         "type": "git",
