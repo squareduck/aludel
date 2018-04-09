@@ -8,6 +8,8 @@ export type ValidationField = string | ValidationFn
 
 // Model configuration
 export type ModelConfig = {
+    // Global State path to Model storage
+    path?: string[]
     // If fields in not empty:
     // - only described fields are permitted
     // - all described fields are required
@@ -180,7 +182,7 @@ function applyDefaults(
     }
 }
 
-function connect(state: LocalModel, model): ConnectedModel {
+function connect(state: LocalModel, model: Model): ConnectedModel {
     return {
         path: model.path,
         insert: instance => model.insert(state, instance),
@@ -193,7 +195,7 @@ function connect(state: LocalModel, model): ConnectedModel {
 
 export function createModel(name: string, config: ModelConfig = {}): Model {
     const model = {
-        path: modelPath(name),
+        path: config.path || modelPath(name),
         insert: (state, instance) => insert(state, config, instance),
         get: (state, id) => get(state, id),
         filter: (state, filterFn) => filter(state, filterFn),

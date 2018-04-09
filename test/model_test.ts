@@ -1,6 +1,13 @@
 import test from 'ava'
 import { createModel } from '../src/model'
 
+test('createModel() allows to change path in config', t => {
+    const model = createModel('User', {
+        path: ['data', 'users'],
+    })
+    t.deepEqual(model.path, ['data', 'users'])
+})
+
 test('createModel().path returns model path for Global State', t => {
     const model = createModel('User')
     t.deepEqual(model.path, ['$model', 'User'])
