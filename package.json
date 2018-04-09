@@ -1,8 +1,7 @@
 {
     "author": "Daniil Velichko <danvelduck@gmail.com>",
     "name": "aludel",
-    "description":
-        "Web app framework with global store and tightly scoped components",
+    "description": "Web app framework with global store and tightly scoped components",
     "version": "0.0.20",
     "homepage": "https://github.com/squareduck/aludel",
     "repository": {
@@ -37,6 +36,7 @@
         "lodash.get": "^4.4.2",
         "lodash.set": "^4.3.2",
         "object-hash": "^1.2.0",
-        "url-mapper": "^2.0.0"
+        "url-mapper": "^2.0.0",
+        "uuid": "^3.2.1"
     }
 }
