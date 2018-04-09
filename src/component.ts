@@ -1,5 +1,5 @@
 import hash from 'object-hash'
-import { Context, Model, ConnectedActionMap } from './context'
+import { Context, LocalModel, ConnectedActionMap } from './context'
 import { NavigateMap, LinkMap } from './router'
 
 export type Partial<T> = { [P in keyof T]?: T[P] }
@@ -14,10 +14,10 @@ export type Template = {
 
 // Object with useful tools available to every Template render function
 export type RenderTools = {
-    model: Model
+    model: LocalModel
     action: ConnectedActionMap
     child: InstanceMap
-    props: Model
+    props: LocalModel
     create: (component: Component) => Instance
     outlet: Instance
     navigate: NavigateMap
@@ -25,7 +25,7 @@ export type RenderTools = {
 }
 
 // Actions update Template's local model
-export type Action = (...args) => (model: Model) => Model
+export type Action = (...args) => (model: LocalModel) => LocalModel
 export type ActionMap = { [key: string]: Action }
 
 /*
@@ -101,7 +101,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
 // Component Instance that will render the "view" if invoked
 // props - local parameters passed from parent component
 // outlet - possible child component from next section of the routing hierarchy
-export type Instance = (props?: Model, outlet?: Instance) => any
+export type Instance = (props?: LocalModel, outlet?: Instance) => any
 // A map of instances
 export type InstanceMap = { [key: string]: Instance }
 // Tools useful in creating new instances

@@ -1,4 +1,4 @@
-import { createContext, Model } from './context'
+import { createContext, LocalModel } from './context'
 import { Component, Instance, createInstance } from './component'
 import { RouteMap, createRouter, RouterConfig } from './router'
 
@@ -24,7 +24,7 @@ import { RouteMap, createRouter, RouterConfig } from './router'
  *
  */
 export function createApp(
-    initialModel: Model,
+    initialModel: LocalModel,
     topComponent: Component,
     render: (
         instance: Instance,
@@ -79,7 +79,7 @@ export function createApp(
  *
  */
 export function createRoutedApp(
-    initialModel: Model,
+    initialModel: LocalModel,
     routerConfig: RouterConfig,
     render: (
         instance: Instance,
