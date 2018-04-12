@@ -263,3 +263,17 @@ test('createModel().connect() fills in state parameter', t => {
     })
     t.deepEqual(state['collection'][id], connectedModel.get(id))
 })
+
+test('createModel().connect() initializes state field if passed', t => {
+    const state = {}
+    const model = createModel('User')
+    const connectedModel = model.connect(state, 'users')
+
+    const id = connectedModel.insert({ name: 'John', age: 21 })
+    t.deepEqual(connectedModel.get(id), {
+        id,
+        name: 'John',
+        age: 21,
+    })
+    t.deepEqual(state['users']['collection'][id], connectedModel.get(id))
+})

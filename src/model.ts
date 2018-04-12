@@ -34,7 +34,10 @@ export type Model = {
         change: (instance: LocalModel) => LocalModel,
     ) => LocalModel
     remove: (state: PartialModelState, id: string) => boolean
-    connect: (state: PartialModelState) => ConnectedModel
+    connect: (
+        state: PartialModelState,
+        field?: string | undefined,
+    ) => ConnectedModel
 }
 
 export type ConnectedModel = {
@@ -191,7 +194,15 @@ function applyDefaults(
     }
 }
 
-function connect(state: LocalModel, model: Model): ConnectedModel {
+function connect(
+    state: LocalModel,
+    field: string | undefined,
+    model: Model,
+): ConnectedModel {
+    if (typeof field === 'string' && typeof state[field] !== 'object') {
+        state[field] = {}
+        state = state[field]
+    }
     return {
         path: model.path,
         get: id => model.get(state, id),
@@ -212,7 +223,7 @@ export function createModel(name: string, config: ModelConfig = {}): Model {
         insert: (state, instance) => insert(state, config, instance),
         update: (state, id, changeFn) => update(state, config, id, changeFn),
         remove: (state, id) => remove(state, id),
-        connect: state => connect(state, model),
+        connect: (state, field?) => connect(state, field, model),
     }
 
     return model
