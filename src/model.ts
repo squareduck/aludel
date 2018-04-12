@@ -21,12 +21,13 @@ export type ModelConfig = {
 
 export type Model = {
     path: string[]
-    insert: (state: PartialModelState, instance: LocalModel) => string
     get: (state: PartialModelState, id: string) => LocalModel
+    all: (state: PartialModelState) => LocalModel[]
     filter: (
         state: PartialModelState,
         filter: (instance: LocalModel) => boolean,
     ) => LocalModel[]
+    insert: (state: PartialModelState, instance: LocalModel) => string
     update: (
         state: PartialModelState,
         id: string,
@@ -38,9 +39,10 @@ export type Model = {
 
 export type ConnectedModel = {
     path: string[]
-    insert: (instance: LocalModel) => string
     get: (id: string) => LocalModel
+    all: () => LocalModel[]
     filter: (filter: (instance: LocalModel) => boolean) => LocalModel[]
+    insert: (instance: LocalModel) => string
     update: (
         id: string,
         change: (instance: LocalModel) => LocalModel,
@@ -58,6 +60,27 @@ function modelPath(name: string) {
     return ['$model', name]
 }
 
+function get(state: PartialModelState, id: string): LocalModel {
+    if (!state.collection) return
+
+    return state.collection[id]
+}
+
+function all(state: PartialModelState): LocalModel[] {
+    if (!state.collection) return []
+
+    return Object.values(state.collection)
+}
+
+function filter(
+    state: PartialModelState,
+    filter: (instance: LocalModel) => boolean,
+): LocalModel[] {
+    if (!state.collection) return []
+
+    return Object.values(state.collection).filter(filter)
+}
+
 function insert(
     state: PartialModelState,
     config: ModelConfig,
@@ -71,21 +94,6 @@ function insert(
 
     state.collection[id] = Object.assign(instance, { id })
     return id
-}
-
-function get(state: PartialModelState, id: string): LocalModel {
-    if (!state.collection) return
-
-    return state.collection[id]
-}
-
-function filter(
-    state: PartialModelState,
-    filter: (instance: LocalModel) => boolean,
-): LocalModel[] {
-    if (!state.collection) return []
-
-    return Object.values(state.collection).filter(filter)
 }
 
 function update(
@@ -185,9 +193,10 @@ function applyDefaults(
 function connect(state: LocalModel, model: Model): ConnectedModel {
     return {
         path: model.path,
-        insert: instance => model.insert(state, instance),
         get: id => model.get(state, id),
+        all: () => model.all(state),
         filter: filterFn => model.filter(state, filterFn),
+        insert: instance => model.insert(state, instance),
         update: (id, updateFn) => model.update(state, id, updateFn),
         remove: id => model.remove(state, id),
     }
@@ -196,9 +205,10 @@ function connect(state: LocalModel, model: Model): ConnectedModel {
 export function createModel(name: string, config: ModelConfig = {}): Model {
     const model = {
         path: config.path || modelPath(name),
-        insert: (state, instance) => insert(state, config, instance),
         get: (state, id) => get(state, id),
+        all: state => all(state),
         filter: (state, filterFn) => filter(state, filterFn),
+        insert: (state, instance) => insert(state, config, instance),
         update: (state, id, changeFn) => update(state, config, id, changeFn),
         remove: (state, id) => remove(state, id),
         connect: state => connect(state, model),

@@ -122,9 +122,30 @@ test('createModel().get() searches instance by id', t => {
     t.deepEqual(user, state['collection'][id])
 })
 
+test('createModel().all() returns an array of all instances', t => {
+    const state = {}
+    const model = createModel('User')
+
+    t.deepEqual(model.all(state), [])
+
+    const j = model.insert(state, { name: 'John' })
+    const a = model.insert(state, { name: 'Ash' })
+    const b = model.insert(state, { name: 'Bob' })
+    const c = model.insert(state, { name: 'Cid' })
+
+    t.deepEqual(model.all(state), [
+        { id: j, name: 'John' },
+        { id: a, name: 'Ash' },
+        { id: b, name: 'Bob' },
+        { id: c, name: 'Cid' },
+    ])
+})
+
 test('createModel().filter() filters instances by function', t => {
     const state = {}
     const model = createModel('User')
+
+    t.deepEqual(model.filter(state, i => i.age > 20), [])
 
     const johnId = model.insert(state, { name: 'John', age: 21 })
     const ashId = model.insert(state, { name: 'Ash', age: 18 })
