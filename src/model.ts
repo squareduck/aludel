@@ -61,13 +61,13 @@ function modelPath(name: string) {
 }
 
 function get(state: PartialModelState, id: string): LocalModel {
-    if (!state.collection) return
+    if (!state || !state.collection) return
 
     return state.collection[id]
 }
 
 function all(state: PartialModelState): LocalModel[] {
-    if (!state.collection) return []
+    if (!state || !state.collection) return []
 
     return Object.values(state.collection)
 }
@@ -76,7 +76,7 @@ function filter(
     state: PartialModelState,
     filter: (instance: LocalModel) => boolean,
 ): LocalModel[] {
-    if (!state.collection) return []
+    if (!state || !state.collection) return []
 
     return Object.values(state.collection).filter(filter)
 }
@@ -90,6 +90,7 @@ function insert(
     instance = validate(config.fields, instance)
 
     const id = uuid()
+    if (!state) return
     if (!state.collection) state.collection = {}
 
     state.collection[id] = Object.assign(instance, { id })
@@ -102,7 +103,7 @@ function update(
     id: string,
     change: (instance: LocalModel) => LocalModel,
 ) {
-    if (!state.collection) return
+    if (!state || !state.collection) return
 
     const user = get(state, id)
     if (!user) return
@@ -115,7 +116,7 @@ function update(
 }
 
 function remove(state: PartialModelState, id: string): boolean {
-    if (!state.collection) return
+    if (!state || !state.collection) return
 
     if (!state.collection[id]) return false
 

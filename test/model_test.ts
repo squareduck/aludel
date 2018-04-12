@@ -19,6 +19,8 @@ test('createModel().insert() puts value in model collection', t => {
     const id = model.insert(state, { name: 'John', age: 21 })
 
     t.deepEqual(state['collection'][id], { id, name: 'John', age: 21 })
+
+    t.is(model.insert(undefined, { name: 'John', age: 21 }), undefined)
 })
 
 test('createModel().insert() respects default values', t => {
