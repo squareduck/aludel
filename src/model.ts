@@ -199,8 +199,8 @@ function connect(
     field: string | undefined,
     model: Model,
 ): ConnectedModel {
-    if (typeof field === 'string' && typeof state[field] !== 'object') {
-        state[field] = {}
+    if (typeof field === 'string') {
+        if (typeof state[field] !== 'object') state[field] = {}
         state = state[field]
     }
     return {
