@@ -187,6 +187,20 @@ test('createInstance() passes Local Model to render()', t => {
     t.is(instance(), 'John')
 })
 
+test('createInstance() ensures model.$local is never undefined', t => {
+    const template = createTemplate({
+        render: ({ model }) => model.$local,
+    })
+
+    const component = createComponent(template, {})
+
+    const context = createContext({})
+
+    const instance = context.createInstance(component)
+
+    t.deepEqual(instance(), {})
+})
+
 test.cb('createInstance() passes connected Actions to render()', t => {
     const template = createTemplate({
         actions: {

@@ -142,6 +142,9 @@ function createInstance(
 
     const instance = (props: LocalModel = {}, outlet: Instance = () => {}) => {
         const model = localModel(state, component.paths)
+        if (component.paths.hasOwnProperty('$local') && !model['$local']) {
+            model['$local'] = {}
+        }
         return component.template.render({
             model,
             action,
