@@ -42,6 +42,7 @@ export function createApp(
 
         const actions = context.connectActions(
             { instance: ['$app', 'instance'] },
+            {},
             {
                 setInstance: instance => model => {
                     model.instance = instance

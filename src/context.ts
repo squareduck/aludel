@@ -76,6 +76,7 @@ export type ConnectedActionMap = { [key: string]: ConnectedAction }
 function connectActions(
     state: LocalModel,
     paths: PathMap,
+    defaults: LocalModel,
     actions: ActionMap,
     onUpdate: StateUpdateFn,
     signature?: string,
@@ -83,7 +84,7 @@ function connectActions(
     return Object.keys(actions).reduce((acc, name) => {
         const action = actions[name]
         const connectedAction = (...args) => {
-            const model = localModel(state, paths)
+            const model = localModel(state, paths, defaults)
             Promise.resolve(action(...args)(model)).then(change => {
                 state = applyLocalModel(state, paths, change)
                 const actionInfo = {
@@ -137,6 +138,7 @@ function createInstance(
     const action = connectActions(
         state,
         component.paths,
+        component.defaults,
         component.template.actions,
         onUpdate,
         component.signature,
@@ -180,6 +182,7 @@ export type Context = {
     localModel: (paths: PathMap, defaults?: LocalModel) => LocalModel
     connectActions: (
         paths: PathMap,
+        defaults: LocalModel,
         actions: ActionMap,
         signature?: string,
     ) => ConnectedActionMap
@@ -208,6 +211,7 @@ export function createContext(
     const actions = connectActions(
         state,
         {},
+        {},
         {
             triggerUpdate: () => model => model,
         },
@@ -216,13 +220,22 @@ export function createContext(
     )
 
     return {
-        localModel: (paths: PathMap, defaults?: LocalModel) =>
+        localModel: (paths: PathMap, defaults: LocalModel = {}) =>
             localModel(state, paths, defaults),
         connectActions: (
             paths: PathMap,
+            defaults: LocalModel,
             actions: ActionMap,
             signature?: string,
-        ) => connectActions(state, paths, actions, onUpdate, signature),
+        ) =>
+            connectActions(
+                state,
+                paths,
+                defaults,
+                actions,
+                onUpdate,
+                signature,
+            ),
         triggerUpdate: actions.triggerUpdate,
         createInstance: (component: Component, tools: InstanceTools = {}) =>
             createInstance(state, cache, component, tools, onUpdate),

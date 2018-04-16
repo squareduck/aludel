@@ -180,6 +180,7 @@ function createRouteSetters(
             if (route.actionChain[lastIndex]) {
                 const routeAction = context.connectActions(
                     route.componentChain[lastIndex].paths,
+                    {},
                     {
                         [actionName]: route.actionChain[lastIndex],
                     },
@@ -201,6 +202,7 @@ function createRouteSetters(
 
     return context.connectActions(
         { route: ['$app', 'route'], instance: ['$app', 'instance'] },
+        {},
         actions,
         'Router',
     )

@@ -86,7 +86,7 @@ test.cb('connectActions() returns actions that update Global State', t => {
         counter: ['counter'],
     }
 
-    const connectedActions = context.connectActions(paths, actions, 'Test')
+    const connectedActions = context.connectActions(paths, {}, actions, 'Test')
 
     connectedActions.increment(5)
 })
@@ -122,7 +122,7 @@ test.cb('connectActions() allows actions to return partial Model', t => {
         age: ['person', 'age'],
     }
 
-    const connectedActions = context.connectActions(paths, actions, 'Test')
+    const connectedActions = context.connectActions(paths, {}, actions, 'Test')
 
     connectedActions.growUp(3)
 })
@@ -169,10 +169,51 @@ test.cb('connectActions() allows actions to return a Promise of model', t => {
         asyncCounter: ['asyncCounter'],
     }
 
-    const connectedActions = context.connectActions(paths, actions, 'Test')
+    const connectedActions = context.connectActions(paths, {}, actions, 'Test')
 
     connectedActions.increment(5)
     connectedActions.asyncIncrement(5)
+})
+
+test.cb('connectActions() respects default values', t => {
+    const initialState = {
+        person: {
+            name: 'John',
+        },
+    }
+
+    const paths = {
+        name: ['person', 'name'],
+        age: ['person', 'age'],
+    }
+
+    const actions = {
+        growUp: years => model => {
+            model.age += years
+            return model
+        },
+    }
+
+    const defaults = {
+        name: 'John',
+        age: 21,
+    }
+
+    const context = createContext(initialState, (state, action) => {
+        t.is(state.person.name, 'John')
+        t.is(state.person.age, 26)
+        t.is(action.source, 'PersonActions')
+        t.end()
+    })
+
+    const connectedActions = context.connectActions(
+        paths,
+        defaults,
+        actions,
+        'PersonActions',
+    )
+
+    connectedActions.growUp(5)
 })
 
 test('createInstance() returns wrapped render() of Component', t => {
