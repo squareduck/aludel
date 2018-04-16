@@ -37,6 +37,30 @@ test('localModel() derives values from Global State using paths', t => {
     })
 })
 
+test('localModel() applies defaults if property is not set', t => {
+    const context = createContext({
+        person: {
+            name: 'John',
+        },
+    })
+
+    const model = context.localModel(
+        {
+            name: ['person', 'name'],
+            age: ['person', 'age'],
+        },
+        {
+            name: 'Ash',
+            age: 21,
+        },
+    )
+
+    t.deepEqual(model, {
+        name: 'John',
+        age: 21,
+    })
+})
+
 test.cb('connectActions() returns actions that update Global State', t => {
     const initialState = {
         counter: 0,
@@ -187,18 +211,34 @@ test('createInstance() passes Local Model to render()', t => {
     t.is(instance(), 'John')
 })
 
-test('createInstance() ensures model.$local is never undefined', t => {
+test('createInstance() uses component defaults for Local Model', t => {
     const template = createTemplate({
-        render: ({ model }) => model.$local,
+        sockets: ['name', 'age'],
+        render: ({ model }) => model,
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent(
+        template,
+        {
+            name: ['person', 'name'],
+            age: ['person', 'age'],
+        },
+        {
+            $local: {},
+            name: 'John',
+            age: 21,
+        },
+    )
 
     const context = createContext({})
 
     const instance = context.createInstance(component)
 
-    t.deepEqual(instance(), {})
+    t.deepEqual(instance(), {
+        $local: {},
+        name: 'John',
+        age: 21,
+    })
 })
 
 test.cb('createInstance() passes connected Actions to render()', t => {

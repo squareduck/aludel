@@ -16,10 +16,14 @@ export type LocalModel = { [key: string]: any }
  * Produce a local model by resolving each path against state object.
  *
  */
-function localModel(state, paths) {
+function localModel(
+    state: LocalModel,
+    paths: PathMap,
+    defaults: LocalModel = {},
+) {
     return Object.keys(paths).reduce((acc, key) => {
         const path = paths[key]
-        acc[key] = get(state, path)
+        acc[key] = get(state, path, defaults[key])
         return acc
     }, {})
 }
@@ -141,10 +145,7 @@ function createInstance(
     if (action.$init) action.$init()
 
     const instance = (props: LocalModel = {}, outlet: Instance = () => {}) => {
-        const model = localModel(state, component.paths)
-        if (component.paths.hasOwnProperty('$local') && !model['$local']) {
-            model['$local'] = {}
-        }
+        const model = localModel(state, component.paths, component.defaults)
         return component.template.render({
             model,
             action,
@@ -176,7 +177,7 @@ export type ContextCache = {
 
 // Context that glues together different Components
 export type Context = {
-    localModel: (paths: PathMap) => LocalModel
+    localModel: (paths: PathMap, defaults?: LocalModel) => LocalModel
     connectActions: (
         paths: PathMap,
         actions: ActionMap,
@@ -215,7 +216,8 @@ export function createContext(
     )
 
     return {
-        localModel: (paths: PathMap) => localModel(state, paths),
+        localModel: (paths: PathMap, defaults?: LocalModel) =>
+            localModel(state, paths, defaults),
         connectActions: (
             paths: PathMap,
             actions: ActionMap,

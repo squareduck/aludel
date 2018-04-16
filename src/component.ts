@@ -54,6 +54,7 @@ export type Component = {
     signature: string
     template: Template
     paths: PathMap
+    defaults: LocalModel
 }
 
 // A map of components where each component is associated with some name
@@ -73,7 +74,11 @@ export type ComponentMap = { [key: string]: Component }
  * instances.
  * 
  */
-export function createComponent(template: Template, paths: PathMap): Component {
+export function createComponent(
+    template: Template,
+    paths: PathMap,
+    defaults: LocalModel = {},
+): Component {
     // Check that we have same amount of paths and sockets
     const equalAmount = Object.keys(paths).length === template.sockets.length
     // Check that we have a path for each socket
@@ -94,6 +99,7 @@ export function createComponent(template: Template, paths: PathMap): Component {
     return {
         template,
         paths,
+        defaults,
         signature,
     }
 }
