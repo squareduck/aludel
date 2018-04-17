@@ -10,7 +10,6 @@ import {
     ActionMap,
 } from './component'
 import { Context, ConnectedActionMap } from './context'
-import { layoutComponent } from '../demo/components/layout'
 
 // A map of navigation functions (changes browser URL)
 export type NavigateMap = {

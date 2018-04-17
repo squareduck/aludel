@@ -6,7 +6,6 @@ import {
     createApp,
     createRoutedApp,
 } from '../src/index'
-import { homeComponent } from '../demo/components/home'
 
 test.cb('createApp() returns function which starts update loop', t => {
     const template = createTemplate({
