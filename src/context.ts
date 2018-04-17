@@ -7,6 +7,7 @@ import {
     Component,
     Instance,
     InstanceTools,
+    sourceName,
 } from './component'
 
 // Data storage
@@ -79,7 +80,7 @@ function connectActions(
     defaults: LocalModel,
     actions: ActionMap,
     onUpdate: StateUpdateFn,
-    signature?: string,
+    source?: string,
 ): ConnectedActionMap {
     return Object.keys(actions).reduce((acc, name) => {
         const action = actions[name]
@@ -88,7 +89,7 @@ function connectActions(
             Promise.resolve(action(...args)(model)).then(change => {
                 state = applyLocalModel(state, paths, change)
                 const actionInfo = {
-                    source: signature,
+                    source: source,
                     name: name,
                 }
                 onUpdate(state, actionInfo)
@@ -141,7 +142,7 @@ function createInstance(
         component.defaults,
         component.template.actions,
         onUpdate,
-        component.signature,
+        sourceName(component),
     )
 
     if (action.$init) action.$init()

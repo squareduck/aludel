@@ -107,8 +107,6 @@ export function createComponent({
 
     const signature = hash({ template, paths })
 
-    if (!name) name = signature
-
     paths.$local = ['$local', signature]
 
     return {
@@ -117,6 +115,19 @@ export function createComponent({
         paths,
         defaults,
         signature,
+    }
+}
+
+/*
+ * Returns pretty component name
+ *
+ */
+export function sourceName(component: Component) {
+    const shortSignature = component.signature.substring(0, 8)
+    if (component.name) {
+        return `${component.name} (${shortSignature})`
+    } else {
+        return `(${shortSignature})`
     }
 }
 

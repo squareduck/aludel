@@ -446,6 +446,7 @@ test.cb('createInstance() calls $init action of Component', t => {
     })
 
     const component = createComponent({
+        name: 'MyComponent',
         template,
         paths: {
             counter: ['counter'],
@@ -453,7 +454,10 @@ test.cb('createInstance() calls $init action of Component', t => {
     })
 
     const context = createContext({ counter: 0 }, (state, action) => {
-        if (action.source === component.signature && action.name === '$init') {
+        if (
+            action.source.startsWith('MyComponent') &&
+            action.name === '$init'
+        ) {
             t.is(state.counter, 5)
             t.end()
         }

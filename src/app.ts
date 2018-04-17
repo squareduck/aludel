@@ -28,6 +28,7 @@ export function createApp(
     topComponent: Component,
     render: (
         instance: Instance,
+        state: LocalModel,
         info: { source: string; name: string },
     ) => void,
 ): () => void {
@@ -37,7 +38,7 @@ export function createApp(
 
     return () => {
         const context = createContext(initialModel, (state, action) => {
-            render(state['$app']['instance'], action)
+            render(state['$app']['instance'], state, action)
         })
 
         const actions = context.connectActions(
@@ -84,6 +85,7 @@ export function createRoutedApp(
     routerConfig: RouterConfig,
     render: (
         instance: Instance,
+        state: LocalModel,
         info: { source: string; name: string },
     ) => void,
 ): () => void {
@@ -94,7 +96,7 @@ export function createRoutedApp(
 
     return () => {
         const context = createContext(initialModel, (state, action) => {
-            render(state['$app']['instance'], action)
+            render(state['$app']['instance'], state, action)
         })
 
         const router = createRouter(context, routerConfig)

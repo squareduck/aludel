@@ -14,7 +14,7 @@ test.cb('createApp() returns function which starts update loop', t => {
 
     const component = createComponent({ template })
 
-    const app = createApp({}, component, (instance, action) => {
+    const app = createApp({}, component, (instance, state, action) => {
         t.deepEqual(action, { source: 'App', name: 'setInstance' })
         t.is(instance(), 'content')
         t.end()
@@ -27,7 +27,10 @@ test.cb('createApp() renders instance from $app.instance', t => {
     const secondTemplate = createTemplate({
         render: () => 'second',
     })
-    const secondComponent = createComponent({ template: secondTemplate })
+    const secondComponent = createComponent({
+        name: 'Second',
+        template: secondTemplate,
+    })
 
     const firstTemplate = createTemplate({
         sockets: ['instance'],
@@ -43,6 +46,7 @@ test.cb('createApp() renders instance from $app.instance', t => {
         },
     })
     const firstComponent = createComponent({
+        name: 'First',
         template: firstTemplate,
         paths: {
             instance: ['$app', 'instance'],
@@ -51,13 +55,13 @@ test.cb('createApp() renders instance from $app.instance', t => {
 
     const expectedActions = [
         { source: 'App', name: 'setInstance' },
-        { source: firstComponent.signature, name: 'replaceInstance' },
+        { source: 'First (cb44986c)', name: 'replaceInstance' },
     ]
 
     const expectedRenders = ['first', 'second']
 
     let updateCount = 0
-    const app = createApp({}, firstComponent, (instance, action) => {
+    const app = createApp({}, firstComponent, (instance, state, action) => {
         updateCount += 1
         t.deepEqual(action, expectedActions[updateCount - 1])
         t.is(instance(), expectedRenders[updateCount - 1])
@@ -81,11 +85,15 @@ test.cb('createRoutedApp() starts router in addition to creating app', t => {
         },
     }
 
-    const routedApp = createRoutedApp({}, { routes }, (instance, action) => {
-        t.deepEqual(action, { source: 'Router', name: 'Home' })
-        t.is(instance(), 'content')
-        t.end()
-    })
+    const routedApp = createRoutedApp(
+        {},
+        { routes },
+        (instance, state, action) => {
+            t.deepEqual(action, { source: 'Router', name: 'Home' })
+            t.is(instance(), 'content')
+            t.end()
+        },
+    )
 
     routedApp()
 })
