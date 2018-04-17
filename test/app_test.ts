@@ -13,7 +13,7 @@ test.cb('createApp() returns function which starts update loop', t => {
         render: () => 'content',
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const app = createApp({}, component, (instance, action) => {
         t.deepEqual(action, { source: 'App', name: 'setInstance' })
@@ -28,7 +28,7 @@ test.cb('createApp() renders instance from $app.instance', t => {
     const secondTemplate = createTemplate({
         render: () => 'second',
     })
-    const secondComponent = createComponent(secondTemplate, {})
+    const secondComponent = createComponent({ template: secondTemplate })
 
     const firstTemplate = createTemplate({
         sockets: ['instance'],
@@ -43,8 +43,11 @@ test.cb('createApp() renders instance from $app.instance', t => {
             return 'first'
         },
     })
-    const firstComponent = createComponent(firstTemplate, {
-        instance: ['$app', 'instance'],
+    const firstComponent = createComponent({
+        template: firstTemplate,
+        paths: {
+            instance: ['$app', 'instance'],
+        },
     })
 
     const expectedActions = [
@@ -69,7 +72,7 @@ test.cb('createRoutedApp() starts router in addition to creating app', t => {
     const template = createTemplate({
         render: () => 'content',
     })
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const routes = {
         '*': '/home',
@@ -87,50 +90,3 @@ test.cb('createRoutedApp() starts router in addition to creating app', t => {
 
     routedApp()
 })
-
-// // Home route finding and handling of error when '/' is not defined
-// test.cb('Routed app renders the root route', t => {
-//     const homeTemplate = createTemplate({
-//         render: () => 'Home',
-//     })
-//     const homeComponent = createComponent(homeTemplate, {})
-
-//     const userTemplate = createTemplate({
-//         render: () => 'User',
-//     })
-//     const userComponent = createComponent(userTemplate, {})
-
-//     const badRoutes = {
-//         '/noRoot': {
-//             name: 'Home',
-//             component: homeComponent,
-//         },
-//         '/user/:id': {
-//             name: 'User',
-//             component: userComponent,
-//         },
-//     }
-
-//     t.throws(() => {
-//         const badApp = createRoutedApp({}, { routes: badRoutes }, () => {})
-//         badApp()
-//     })
-
-//     const routes = {
-//         '/': {
-//             name: 'Home',
-//             component: homeComponent,
-//         },
-//         '/user/:id': {
-//             name: 'User',
-//             component: userComponent,
-//         },
-//     }
-
-//     const app = createRoutedApp({}, { routes }, instance => {
-//         t.is('Home', instance())
-//         t.end()
-//     })
-
-//     app()
-// })

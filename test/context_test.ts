@@ -221,7 +221,7 @@ test('createInstance() returns wrapped render() of Component', t => {
         render: () => 'content',
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
@@ -236,8 +236,11 @@ test('createInstance() passes Local Model to render()', t => {
         render: ({ model }) => model.name,
     })
 
-    const component = createComponent(template, {
-        name: ['person', 'name'],
+    const component = createComponent({
+        template,
+        paths: {
+            name: ['person', 'name'],
+        },
     })
 
     const initialState = {
@@ -258,18 +261,18 @@ test('createInstance() uses component defaults for Local Model', t => {
         render: ({ model }) => model,
     })
 
-    const component = createComponent(
+    const component = createComponent({
         template,
-        {
+        paths: {
             name: ['person', 'name'],
             age: ['person', 'age'],
         },
-        {
+        defaults: {
             $local: {},
             name: 'John',
             age: 21,
         },
-    )
+    })
 
     const context = createContext({})
 
@@ -295,7 +298,7 @@ test.cb('createInstance() passes connected Actions to render()', t => {
         },
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
@@ -310,12 +313,18 @@ test('createInstance() passes instances of child Components to render()', t => {
         render: ({ model }) => model.name,
     })
 
-    const firstChildComponent = createComponent(childTemplate, {
-        name: ['child', 0, 'name'],
+    const firstChildComponent = createComponent({
+        template: childTemplate,
+        paths: {
+            name: ['child', 0, 'name'],
+        },
     })
 
-    const secondChildComponent = createComponent(childTemplate, {
-        name: ['child', 1, 'name'],
+    const secondChildComponent = createComponent({
+        template: childTemplate,
+        paths: {
+            name: ['child', 1, 'name'],
+        },
     })
 
     const parentTemplate = createTemplate({
@@ -326,7 +335,7 @@ test('createInstance() passes instances of child Components to render()', t => {
         render: ({ child }) => `${child.first()} ${child.second()}`,
     })
 
-    const parentComponent = createComponent(parentTemplate, {})
+    const parentComponent = createComponent({ template: parentTemplate })
 
     const initialState = {
         child: [{ name: 'Ash' }, { name: 'Bob' }],
@@ -344,7 +353,7 @@ test('createInstance() passes props to render()', t => {
         render: ({ props }) => `${props.name} ${props.age}`,
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
@@ -360,7 +369,9 @@ test('createInstance() passes itself as create() to render()', t => {
                 render: () => 'dynamic',
             })
 
-            const dynamicComponent = createComponent(dynamicTemplate, {})
+            const dynamicComponent = createComponent({
+                template: dynamicTemplate,
+            })
 
             const dynamicInstance = create(dynamicComponent)
 
@@ -368,7 +379,7 @@ test('createInstance() passes itself as create() to render()', t => {
         },
     })
 
-    const mainComponent = createComponent(mainTemplate, {})
+    const mainComponent = createComponent({ template: mainTemplate })
 
     const context = createContext({})
 
@@ -381,7 +392,7 @@ test('createInstance() passes outlet to render()', t => {
         render: () => 'inner',
     })
 
-    const innerComponent = createComponent(innerTemplate, {})
+    const innerComponent = createComponent({ template: innerTemplate })
 
     const outerTemplate = createTemplate({
         render: ({ outlet }) => {
@@ -389,7 +400,7 @@ test('createInstance() passes outlet to render()', t => {
         },
     })
 
-    const outerComponent = createComponent(outerTemplate, {})
+    const outerComponent = createComponent({ template: outerTemplate })
 
     const context = createContext({})
 
@@ -407,7 +418,7 @@ test('createInstance() passes tools to render()', t => {
         },
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
@@ -434,8 +445,11 @@ test.cb('createInstance() calls $init action of Component', t => {
         },
     })
 
-    const component = createComponent(template, {
-        counter: ['counter'],
+    const component = createComponent({
+        template,
+        paths: {
+            counter: ['counter'],
+        },
     })
 
     const context = createContext({ counter: 0 }, (state, action) => {
@@ -459,8 +473,11 @@ test.cb('createInstance() caches Instances', t => {
         },
     })
 
-    const component = createComponent(template, {
-        counter: ['counter'],
+    const component = createComponent({
+        template,
+        paths: {
+            counter: ['counter'],
+        },
     })
 
     const context = createContext({ counter: 0 }, (state, action) => {

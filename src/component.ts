@@ -52,6 +52,7 @@ export type PathMap = { [key: string]: (string | number)[] }
 // Component
 export type Component = {
     signature: string
+    name: string
     template: Template
     paths: PathMap
     defaults: LocalModel
@@ -59,6 +60,14 @@ export type Component = {
 
 // A map of components where each component is associated with some name
 export type ComponentMap = { [key: string]: Component }
+
+// Component configuration object
+export type ComponentConfig = {
+    template: Template
+    name?: string
+    defaults?: LocalModel
+    paths?: PathMap
+}
 
 /*
  * Create Component
@@ -74,11 +83,12 @@ export type ComponentMap = { [key: string]: Component }
  * instances.
  * 
  */
-export function createComponent(
-    template: Template,
-    paths: PathMap,
-    defaults: LocalModel = {},
-): Component {
+export function createComponent({
+    template,
+    name,
+    paths = {},
+    defaults = {},
+}: ComponentConfig): Component {
     // Check that we have same amount of paths and sockets
     const equalAmount = Object.keys(paths).length === template.sockets.length
     // Check that we have a path for each socket
@@ -89,15 +99,21 @@ export function createComponent(
     // If either is false we throw error
     if (!equalAmount || uncoveredSockets.length > 0) {
         const socketList = uncoveredSockets.join(', ')
-        throw new Error(`Component paths don't cover sockets: ${socketList}`)
+        throw new Error(
+            `Component ${name ||
+                '(no name)'} paths don't cover sockets: ${socketList}`,
+        )
     }
 
     const signature = hash({ template, paths })
+
+    if (!name) name = signature
 
     paths.$local = ['$local', signature]
 
     return {
         template,
+        name,
         paths,
         defaults,
         signature,

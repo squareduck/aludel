@@ -9,7 +9,7 @@ import {
 
 test('createRouter() flattens routes', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
     const context = createContext({})
 
     const actionFn = () => model => model
@@ -97,7 +97,7 @@ test('createRouter() flattens routes', t => {
 
 test('createRouter() throws if two flat routes have the same name or the same path', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
     const context = createContext({})
 
     const nameErr = t.throws(() => {
@@ -134,7 +134,7 @@ test('createRouter() throws if two flat routes have the same name or the same pa
 
 test('createRouter() throws if some route does not start with /', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
     const context = createContext({})
 
     const err = t.throws(() => {
@@ -151,7 +151,7 @@ test('createRouter() throws if some route does not start with /', t => {
 
 test('createRouter() creates navigate action for each route', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
     const routes = {
         '*': '/shop',
         '/shop': {
@@ -189,12 +189,12 @@ test.cb('createRouter() creates setRoute action for each route', t => {
     const shopTemplate = createTemplate({
         render: ({ outlet }) => `shop ${outlet()}`,
     })
-    const shopComponent = createComponent(shopTemplate, {})
+    const shopComponent = createComponent({ template: shopTemplate })
 
     const itemTemplate = createTemplate({
         render: () => 'item',
     })
-    const itemComponent = createComponent(itemTemplate, {})
+    const itemComponent = createComponent({ template: itemTemplate })
 
     const routes = {
         '/shop': {
@@ -239,7 +239,10 @@ test.cb('createRouter() wires route actions to run inside setRoute', t => {
     const template = createTemplate({
         sockets: ['counter'],
     })
-    const component = createComponent(template, { counter: ['counter'] })
+    const component = createComponent({
+        template,
+        paths: { counter: ['counter'] },
+    })
 
     const expectedActions = [
         { source: 'Router', name: `Home (${component.signature})` },
@@ -271,7 +274,7 @@ test.cb('createRouter() wires route actions to run inside setRoute', t => {
 
 test('createRouter() creates link() for each route', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
@@ -302,7 +305,7 @@ test('createRouter() creates link() for each route', t => {
 
 test.cb('createRouter() exposes start() which enables history listening', t => {
     const template = createTemplate({})
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const expectedRoutes = [
         { name: 'Shop', path: '/shop', params: {} },
@@ -361,13 +364,13 @@ test.cb('createRouter() adds layoutComponent into each component chain', t => {
         render: ({ outlet }) => `layout ${outlet()}`,
     })
 
-    const layoutComponent = createComponent(layoutTemplate, {})
+    const layoutComponent = createComponent({ template: layoutTemplate })
 
     const homeTempplate = createTemplate({
         render: () => 'home',
     })
 
-    const homeComponent = createComponent(homeTempplate, {})
+    const homeComponent = createComponent({ template: homeTempplate })
 
     const context = createContext({}, (state, action) => {
         t.deepEqual(action, { source: 'Router', name: 'Home' })

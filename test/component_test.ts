@@ -20,12 +20,19 @@ test('createComponent() throws if paths dont cover all Template sockets', t => {
     })
 
     const err = t.throws(() => {
-        const component = createComponent(template, {
-            name: ['name'],
+        const component = createComponent({
+            template,
+            name: 'MyComponent',
+            paths: {
+                name: ['name'],
+            },
         })
     })
 
-    t.is(err.message, `Component paths don't cover sockets: age, email`)
+    t.is(
+        err.message,
+        `Component MyComponent paths don't cover sockets: age, email`,
+    )
 })
 
 test('createComponent() calculates signature from Template and paths', t => {
@@ -33,14 +40,20 @@ test('createComponent() calculates signature from Template and paths', t => {
         sockets: ['name', 'age'],
     })
 
-    const component1 = createComponent(template, {
-        name: ['one', 'name'],
-        age: ['one', 'age'],
+    const component1 = createComponent({
+        template,
+        paths: {
+            name: ['one', 'name'],
+            age: ['one', 'age'],
+        },
     })
 
-    const component2 = createComponent(template, {
-        name: ['two', 'name'],
-        age: ['two', 'age'],
+    const component2 = createComponent({
+        template,
+        paths: {
+            name: ['two', 'name'],
+            age: ['two', 'age'],
+        },
     })
 
     t.truthy(typeof component1.signature === 'string')
@@ -56,8 +69,11 @@ test('createComponent() adds $local field to paths', t => {
     const template = createTemplate({
         sockets: ['name'],
     })
-    const component = createComponent(template, {
-        name: ['name'],
+    const component = createComponent({
+        template,
+        paths: {
+            name: ['name'],
+        },
     })
 
     t.deepEqual(component.paths, {
@@ -71,7 +87,7 @@ test('createInstance() calls context.createInstance()', t => {
         render: () => 'content',
     })
 
-    const component = createComponent(template, {})
+    const component = createComponent({ template })
 
     const context = createContext({})
 
