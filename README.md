@@ -67,7 +67,8 @@ Actions define functions that update Global State. The catch is - Componets don'
 
 An action must return the new version of Local Model. This new version will get synchronized back into Global State behind the scenes, and _onUpdate_ callback will be called (usually causing the rerender).
 
-Actions can return a Promise of Local Model. In fact every action is treated asynchronously for consistency (using `Promise.resolve()`).
+Copying of updated Local Model is done through Immer's `produce()`. That
+ensures immutability of state updates.
 
 Actions can also return a partial version of Local Model, by omitting some top fields. Aludel will not touch corresponding values in Global State during synchronization.
 
