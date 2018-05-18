@@ -127,54 +127,6 @@ test.cb('connectActions() allows actions to return partial Model', t => {
     connectedActions.growUp(3)
 })
 
-test.cb('connectActions() allows actions to return a Promise of model', t => {
-    const initialState = {
-        counter: 0,
-        asyncCounter: 0,
-    }
-
-    const expectedActions = [
-        { source: 'Test', name: 'increment' },
-        { source: 'Test', name: 'asyncIncrement' },
-    ]
-    const expectedStates = [
-        { counter: 5, asyncCounter: 0 },
-        { counter: 5, asyncCounter: 5 },
-    ]
-
-    let updateCount = 0
-    const context = createContext(initialState, (state, action) => {
-        updateCount += 1
-        t.deepEqual(expectedActions[updateCount - 1], action)
-        t.deepEqual(expectedStates[updateCount - 1], state)
-        if (updateCount === 2) t.end()
-    })
-
-    const actions = {
-        increment: amount => model => {
-            model.counter += amount
-            return model
-        },
-        asyncIncrement: amount => model => {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    resolve({ asyncCounter: model.asyncCounter + amount })
-                }, 10)
-            })
-        },
-    }
-
-    const paths = {
-        counter: ['counter'],
-        asyncCounter: ['asyncCounter'],
-    }
-
-    const connectedActions = context.connectActions(paths, {}, actions, 'Test')
-
-    connectedActions.increment(5)
-    connectedActions.asyncIncrement(5)
-})
-
 test.cb('connectActions() respects default values', t => {
     const initialState = {
         person: {

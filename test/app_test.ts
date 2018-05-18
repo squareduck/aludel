@@ -24,6 +24,8 @@ test.cb('createApp() returns function which starts update loop', t => {
 })
 
 test.cb('createApp() renders instance from $app.instance', t => {
+    let globalAction
+
     const secondTemplate = createTemplate({
         render: () => 'second',
     })
@@ -41,7 +43,7 @@ test.cb('createApp() renders instance from $app.instance', t => {
             },
         },
         render: ({ action, create }) => {
-            action.replaceInstance(create(secondComponent))
+            globalAction = () => action.replaceInstance(create(secondComponent))
             return 'first'
         },
     })
@@ -55,7 +57,7 @@ test.cb('createApp() renders instance from $app.instance', t => {
 
     const expectedActions = [
         { source: 'App', name: 'setInstance' },
-        { source: 'First (cb44986c)', name: 'replaceInstance' },
+        { source: 'First (15589495)', name: 'replaceInstance' },
     ]
 
     const expectedRenders = ['first', 'second']
@@ -63,9 +65,15 @@ test.cb('createApp() renders instance from $app.instance', t => {
     let updateCount = 0
     const app = createApp({}, firstComponent, (instance, state, action) => {
         updateCount += 1
-        t.deepEqual(action, expectedActions[updateCount - 1])
+
         t.is(instance(), expectedRenders[updateCount - 1])
-        if (updateCount === 2) t.end()
+        t.deepEqual(action, expectedActions[updateCount - 1])
+
+        if (updateCount < 2) {
+            globalAction()
+        } else {
+            t.end()
+        }
     })
 
     app()

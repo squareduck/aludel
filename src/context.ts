@@ -1,5 +1,6 @@
 import get from 'lodash.get'
 import set from 'lodash.set'
+import produce from 'immer'
 import {
     Action,
     ActionMap,
@@ -67,9 +68,8 @@ export type ConnectedActionMap = { [key: string]: ConnectedAction }
  * As soon as Connected Action is finished we call Context's onUpdate
  * function.
  * 
- * Result of running an Action is always treated as a Promise. So changes
- * to Global State and calling of onUpdate will happen on the next tick
- * of Event Loop.
+ * Global state updates are performed with Immer library. This provides
+ * seamless immutability.
  *
  * Returns a map of Connected Actions that mirrors input Actions Map.
  *
@@ -86,14 +86,13 @@ function connectActions(
         const action = actions[name]
         const connectedAction = (...args) => {
             const model = localModel(state, paths, defaults)
-            Promise.resolve(action(...args)(model)).then(change => {
-                state = applyLocalModel(state, paths, change)
-                const actionInfo = {
-                    source: source,
-                    name: name,
-                }
-                onUpdate(state, actionInfo)
-            })
+            const change = produce(model, action(...args))
+            state = applyLocalModel(state, paths, change)
+            const actionInfo = {
+                source: source,
+                name: name,
+            }
+            onUpdate(state, actionInfo)
         }
         acc[name] = connectedAction
         return acc
